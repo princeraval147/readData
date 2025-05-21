@@ -1,5 +1,4 @@
 import Header from './components/Header'
-import ReadCSV from './components/ReadCSV'
 import { Outlet } from 'react-router-dom'
 
 const App = () => {
