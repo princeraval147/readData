@@ -1,0 +1,15 @@
+.headerLists {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.headerLists li a {
+    text-decoration: none;
+    color: #333;
+}
+
+.headerLists li a:hover {
+    text-decoration: underline;
+    color: #000;
+}
