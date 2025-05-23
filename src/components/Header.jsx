@@ -81,9 +81,14 @@ const Header = () => {
                             <NavLink to='/login'>Login</NavLink>
                         </li>
                     ) : (
-                        <li>
-                            <button onClick={logout}>Logout</button>
-                        </li>
+                        <>
+                            <li>
+                                <button onClick={logout}>Logout</button>
+                            </li>
+                            <li>
+                                <NavLink to='/stock-data'>Stock Data</NavLink>
+                            </li>
+                        </>
                     )
                 }
                 {/* <li>
@@ -92,9 +97,9 @@ const Header = () => {
                 <li>
                     <NavLink onClick={logout}>Logout</NavLink>
                 </li> */}
-                <li>
+                {/* <li>
                     <NavLink to='/stock-data'>Stock Data</NavLink>
-                </li>
+                </li> */}
                 {/* <li>
                     <NavLink to='/view-stock'>View Stock</NavLink>
                 </li> */}
