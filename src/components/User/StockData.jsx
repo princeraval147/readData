@@ -47,11 +47,13 @@ const StockData = () => {
             });
     }, []);
 
-    if (stocks.length === 0) return <div className={styles.loadingOverlay}>
-        <CircularProgress size={60} color="primary" />
-    </div>
+    // Loading
+    // if (stocks.length === 0) return <div className={styles.loadingOverlay}>
+    //     <CircularProgress size={60} color="primary" />
+    // </div>
 
-    const headers = Object.keys(stocks[0] || {});
+    // const headers = Object.keys(stocks[0] || {});
+    const headers = stocks.length > 0 ? Object.keys(stocks[0]) : [];
 
     // Pagination logic
     const totalPages = Math.ceil(stocks.length / rowsPerPage);
@@ -87,7 +89,7 @@ const StockData = () => {
 
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
             setStocks(jsonData); // Replace existing data
         };
@@ -109,6 +111,87 @@ const StockData = () => {
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
         saveAs(data, "diamond_stock.xlsx");
     };
+
+
+    // Send to DB
+    const headerMapping = {
+        'STOCK_': 'STOCK',
+        'REPORT_': 'REPORT_NO',
+        'TABLE_': 'TABLE_PERCENT',
+        'DEPTH_': 'DEPTH_PERCENT',
+        'PRICE_PER_CARAT': 'PRICE_PER_CARAT',
+        'EYE_CLEAN': 'EYE_CLEAN',
+        'FLUORESCENCE_INTENSITY': 'FLUORESCENCE_INTENSITY',
+        'DIAMOND_VIDEO': 'DIAMOND_VIDEO',
+        'DIAMOND_IMAGE': 'DIAMOND_IMAGE',
+        'GROWTH_TYPE': 'GROWTH_TYPE',
+        'FANCY_COLOR_INTENSITY': 'FANCY_COLOR_INTENSITY',
+        'FANCY_COLOR': 'FANCY_COLOR',
+    };
+
+    function normalizeKey(header) {
+        const cleanedKey = header
+            .trim()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-zA-Z0-9_]/g, '') // Remove non-alphanumeric (e.g., #, %, @)
+            .toUpperCase();
+        return headerMapping[cleanedKey] || cleanedKey;
+    }
+
+    function convertToObjects(rows) {
+        if (!Array.isArray(rows) || rows.length < 2 || !Array.isArray(rows[0])) {
+            console.warn("Invalid rows format:", rows[0]);
+            return [];
+        }
+
+        const headers = rows[0].map(normalizeKey);
+        const dataRows = rows.slice(1);
+
+        return dataRows.map((row) => {
+            const obj = {};
+            headers.forEach((key, index) => {
+                if (key && key.trim() !== '') {
+                    obj[key] = row[index] !== undefined ? row[index] : '';
+                }
+            });
+            return obj;
+        });
+    }
+
+    function normalizeObjectKeys(data) {
+        return data.map(obj => {
+            const normalized = {};
+            Object.entries(obj).forEach(([key, value]) => {
+                const cleanedKey = key
+                    .trim()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-zA-Z0-9_]/g, '')
+                    .toUpperCase();
+                const dbKey = headerMapping[cleanedKey] || cleanedKey;
+                normalized[dbKey] = value ?? '';
+            });
+            return normalized;
+        });
+    }
+
+
+    const uploadData = async () => {
+        if (!Array.isArray(stocks) || stocks.length === 0) {
+            alert("Invalid or empty data");
+            return;
+        }
+        console.log("Data to be sent to DB: ", stocks[0]);
+        const sendToDB = normalizeObjectKeys(stocks);
+        console.log("Normalized data to be sent to DB: ", sendToDB[0]);
+        try {
+            const res = await Axios.post('http://localhost:5000/api/upload-excel', sendToDB);
+            alert(res.data.message);
+        } catch (error) {
+            console.error("Internal Error:", error);
+            alert("Upload failed");
+        }
+    };
+
 
 
 
@@ -157,11 +240,8 @@ const StockData = () => {
                             Export to Excel
                         </button>
                     </Box>
+                    <button onClick={uploadData} disabled={stocks.length === 0}>Upload to DB</button>
                 </Box>
-
-
-
-
 
                 <TableContainer component={Paper} sx={{ maxHeight: 480, overflow: 'auto' }}>
                     <Table stickyHeader>
