@@ -1,0 +1,147 @@
+.logincontainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 75vh;
+    /* background: #e7f4ff; */
+    padding: 20px;
+
+}
+
+.formBox {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.568);
+    width: 360px;
+    text-align: center;
+    max-width: 100%;
+}
+
+.tabs {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.tabs button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: none;
+    font-size: 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: 0.3s;
+}
+
+.tabs button.active {
+    font-weight: bold;
+    border-bottom: 2px solid black;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form h2 {
+    font-size: 22px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.form p {
+    font-size: 14px;
+    color: gray;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.otp-input {
+    text-align: center;
+    font-size: 18px;
+    letter-spacing: 5px;
+    font-weight: bold;
+}
+
+.form button {
+    width: 100%;
+    padding: 10px;
+    background: black;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.form button:hover {
+    background: #333;
+}
+
+.forgotPassword {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.forgotPassword a {
+    font-size: 14px;
+    color: #007bff;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.forgotPassword a:hover {
+    text-decoration: underline;
+}
+
+.message {
+    font-size: 14px;
+    color: green;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.inputText {
+    width: 85%;
+    font-weight: 500;
+    border: 2px solid rgba(0, 0, 0, 0.288);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    font-size: 15px;
+}
+
+.inputText:focus {
+    outline: none;
+    /* border: 2px solid #f75d34; */
+    border: 2px solid #5a8dee;
+}
+
+@media (max-width: 480px) {
+    .logincontainer {
+        height: auto;
+        padding: 20px;
+    }
+
+    .formBox {
+        width: 100%;
+        padding: 15px;
+    }
+
+    .form input {
+        font-size: 16px;
+    }
+
+    .form button {
+        font-size: 18px;
+        padding: 14px;
+    }
+
+    .forgotPassword a {
+        font-size: 16px;
+    }
+}
