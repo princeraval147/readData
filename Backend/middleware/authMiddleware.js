@@ -1,8 +1,9 @@
 const db = require('../config/db'); // or wherever your DB connection is
 
 function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // const authHeader = req.headers['authorization'];
+    // const token = authHeader && authHeader.split(' ')[1];
+    const token = req.cookies.token; // <-- 🔁 Changed from headers to cookies
 
     if (!token) {
         return res.status(401).json({ message: 'Token missing' });
