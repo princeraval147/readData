@@ -34,7 +34,7 @@ const ReadExcleData = () => {
     };
 
     const headerMapping = {
-        'STOCK_': 'STOCK',
+        'STOCK_ID': 'STOCKID',
         'REPORT_': 'REPORT_NO',
         'TABLE_': 'TABLE_PERCENT',
         'DEPTH_': 'DEPTH_PERCENT',
@@ -75,7 +75,6 @@ const ReadExcleData = () => {
         });
     }
 
-
     const uploadData = async () => {
         const sendToDB = convertToObjects(data);
         console.log("Data to be sent to DB: ", sendToDB[0]);
@@ -87,6 +86,8 @@ const ReadExcleData = () => {
             alert("Upload failed");
         }
     };
+
+
 
 
 
