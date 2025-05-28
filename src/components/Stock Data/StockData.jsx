@@ -16,11 +16,14 @@ import Slider from '@mui/material/Slider';
 import { Select, MenuItem, FormControl, InputLabel, Button, TextField } from '@mui/material';
 // import debounce from 'lodash.debounce';
 import StockTable from './StockTable';
+import { Stack } from '@mui/material';
+import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart } from '@mui/icons-material';
 
 
 const StockData = () => {
 
     const barcoderef = useRef(null);
+    const partyRef = useRef(null);
 
     const [stocks, setStocks] = useState([]);
     const [error, setError] = useState(null);
@@ -147,9 +150,9 @@ const StockData = () => {
             alert("Invalid or empty data");
             return;
         }
-        console.log("Data to be sent to DB: ", stocks[0]);
+        // console.log("Data to be sent to DB: ", stocks[0]);
         const sendToDB = normalizeObjectKeys(stocks);
-        console.log("Normalized data to be sent to DB: ", sendToDB[0]);
+        // console.log("Normalized data to be sent to DB: ", sendToDB[0]);
         try {
             const res = await Axios.post('http://localhost:5000/api/upload-excel', sendToDB);
             alert(res.data.message);
@@ -246,12 +249,12 @@ const StockData = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Form Data Submitted: ", formData);
+        // console.log("Form Data Submitted: ", formData);
         resetFormData();
         try {
             Axios.post('http://localhost:5000/api/add-diamondstock', formData)
                 .then((response) => {
-                    console.log("Response from server:", response.data);
+                    // console.log("Response from server:", response.data);
                     alert(response.data.message);
                     fetchDiamondStock(); // Refresh the stock data
                 })
@@ -273,6 +276,9 @@ const StockData = () => {
         const party = formData.party;
         if (!formData.party || formData.party.trim() === '') {
             alert("Please enter a party before putting stock on hold.");
+            setTimeout(() => {
+                partyRef?.current.focus();
+            }, 100);
             return;
         }
 
@@ -289,11 +295,11 @@ const StockData = () => {
                 sellPayload,
                 { withCredentials: true }
             );
-            console.log("Inserted into sell_data:", insertResponse.data);
+            // console.log("Inserted into sell_data:", insertResponse.data);
 
             Axios.put(`http://localhost:5000/api/update-status/${rowData.ID}`, { party })
                 .then((response) => {
-                    console.log("Response from server:", response.data);
+                    // console.log("Response from server:", response.data);
                     alert(response.data.message);
                     resetFormData();
                     fetchDiamondStock();
@@ -309,8 +315,6 @@ const StockData = () => {
     }
 
     const handleSell = async () => {
-        console.log("Selling diamond with ID:", rowData.ID);
-
         try {
             // 1. Insert into sell_data
             const sellPayload = {
@@ -326,11 +330,11 @@ const StockData = () => {
                 { withCredentials: true }
             );
 
-            console.log("Inserted into sell_data:", insertResponse.data);
+            // console.log("Inserted into sell_data:", insertResponse.data);
 
             Axios.delete(`http://localhost:5000/api/delete-stock/${rowData.ID}`)
                 .then((response) => {
-                    console.log("Response from server:", response.data);
+                    // console.log("Response from server:", response.data);
                     alert(response.data.message);
                     resetFormData();
                     fetchDiamondStock(); // Refresh the stock data
@@ -346,7 +350,7 @@ const StockData = () => {
     }
 
     const handleRowClick = useCallback((row) => {
-        console.log("Row clicked:", row);
+        // console.log("Row clicked:", row);
         setRowData(row);
         setFormData({
             barcode: row.BARCODE || '',
@@ -405,7 +409,7 @@ const StockData = () => {
     return (
         <>
             <Box>
-                <Box display="flex" justifyContent="flex-start" sx={{ mb: 2, gap: 2 }}>
+                {/* <Box display="flex" justifyContent="flex-start" sx={{ mb: 2, gap: 2 }}>
                     <label htmlFor="import-excel">
                         <input
                             type="file"
@@ -445,8 +449,82 @@ const StockData = () => {
                     <button onClick={uploadData} disabled={stocks.length === 0}>Upload to DB</button>
                     <button type='button' onClick={fetchDiamondStock}>Show</button>
                     <button type='button' onClick={handleStatus} disabled={rowData.length === 0}>Hold</button>
-                    <button type='button' onClick={handleSell} disabled={rowData.length === 0}>Sell</button>
+                    <Button type='button' onClick={handleSell} disabled={rowData.length === 0} variant='contained' color='error'>
+                        Sell
+                    </Button>
+                </Box> */}
+
+                <Box mb={2}>
+                    <Stack direction="row" spacing={2} flexWrap="wrap">
+                        <label htmlFor="import-excel">
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                id="import-excel"
+                                onChange={handleImportExcel}
+                                style={{ display: 'none' }}
+                            />
+                            <Button
+                                variant="contained"
+                                component="span"
+                                startIcon={<UploadFile />}
+                                sx={{ backgroundColor: '#388e3c' }}
+                                onClick={() => document.getElementById('import-excel').click()}
+                            >
+                                Import Excel
+                            </Button>
+                        </label>
+
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<SaveAlt />}
+                            onClick={exportToExcel}
+                        >
+                            Export to Excel
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            startIcon={<CloudUpload />}
+                            onClick={uploadData}
+                            disabled={stocks.length === 0}
+                        >
+                            Upload to DB
+                        </Button>
+
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<Visibility />}
+                            onClick={fetchDiamondStock}
+                        >
+                            Show
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            color="warning"
+                            startIcon={<Pause />}
+                            onClick={handleStatus}
+                            disabled={rowData.length === 0}
+                        >
+                            Hold
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            color="error"
+                            startIcon={<ShoppingCart />}
+                            onClick={handleSell}
+                            disabled={rowData.length === 0}
+                        >
+                            Sell
+                        </Button>
+                    </Stack>
                 </Box>
+
 
                 {/* Search */}
                 <Box sx={{
@@ -743,6 +821,7 @@ const StockData = () => {
                                         placeholder='party'
                                         value={formData.party}
                                         onChange={handleChange}
+                                        ref={partyRef}
                                     />
                                 </td>
                                 <td>
@@ -764,15 +843,16 @@ const StockData = () => {
 
                 {loading ? (
                     <Box
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                        justifyContent="center"
-                        minHeight="300px"
-                        border="1px solid #ddd"
-                        borderRadius={2}
-                        p={4}
-                        bgcolor="#f5f5f5"
+                        // display="flex"
+                        // flexDirection="column"
+                        // alignItems="center"
+                        // justifyContent="center"
+                        // minHeight="300px"
+                        // border="1px solid #ddd"
+                        // borderRadius={2}
+                        // p={4}
+                        // bgcolor="#f5f5f5"
+                        className={styles.loadingOverlay}
                     >
                         <CircularProgress />
                         <Typography variant="body1" mt={2}>

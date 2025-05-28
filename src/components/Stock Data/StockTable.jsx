@@ -28,14 +28,24 @@ const StockTable = React.memo(({ stocks, onRowClick }) => {
 
     return (
         <>
-            <TableContainer component={Paper} sx={{ maxHeight: 480, overflow: 'auto' }}>
-                <Table stickyHeader>
+            {/* <TableContainer component={Paper} sx={{ maxHeight: 480, overflow: 'auto' }}> */}
+            <TableContainer component={Paper}>
+                <Table>
                     <TableHead>
-                        <TableRow>
+                        <TableRow
+                            sx={{
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f0f0f0',
+                                zIndex: 1
+                            }}>
                             {headers.map((header, i) => (
                                 <TableCell
                                     key={i}
-                                    sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}
+                                    sx={{
+                                        backgroundColor: '#f0f0f0',
+                                        fontWeight: 'bold',
+                                    }}
                                 >
                                     {header}
                                 </TableCell>
