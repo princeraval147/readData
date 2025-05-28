@@ -28,43 +28,37 @@ const StockTable = React.memo(({ stocks, onRowClick }) => {
 
     return (
         <>
-            {loading ? (
-                <Box textAlign="center" mt={2}>
-                    <CircularProgress />
-                </Box>
-            ) : (
-                <TableContainer component={Paper} sx={{ maxHeight: 480, overflow: 'auto' }}>
-                    <Table stickyHeader>
-                        <TableHead>
-                            <TableRow>
-                                {headers.map((header, i) => (
-                                    <TableCell
-                                        key={i}
-                                        sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}
-                                    >
-                                        {header}
+            <TableContainer component={Paper} sx={{ maxHeight: 480, overflow: 'auto' }}>
+                <Table stickyHeader>
+                    <TableHead>
+                        <TableRow>
+                            {headers.map((header, i) => (
+                                <TableCell
+                                    key={i}
+                                    sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}
+                                >
+                                    {header}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {paginatedData.map((row, rowIndex) => (
+                            <TableRow
+                                key={rowIndex}
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => onRowClick(row)}
+                            >
+                                {headers.map((header, colIndex) => (
+                                    <TableCell key={colIndex}>
+                                        {row[header]}
                                     </TableCell>
                                 ))}
                             </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {paginatedData.map((row, rowIndex) => (
-                                <TableRow
-                                    key={rowIndex}
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={() => onRowClick(row)}
-                                >
-                                    {headers.map((header, colIndex) => (
-                                        <TableCell key={colIndex}>
-                                            {row[header]}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            )}
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
 
             {/* Pagination */}
             {stocks.length !== 0 && (
