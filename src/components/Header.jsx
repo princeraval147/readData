@@ -131,10 +131,10 @@ const Header = () => {
                     ) : (
                         <>
                             <li>
-                                <button onClick={logout}>Logout</button>
+                                <NavLink to='/stock-data'>Stock Data</NavLink>
                             </li>
                             <li>
-                                <NavLink to='/stock-data'>Stock Data</NavLink>
+                                <button onClick={logout}>Logout</button>
                             </li>
                         </>
                     )
