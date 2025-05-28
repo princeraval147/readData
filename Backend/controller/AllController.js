@@ -111,3 +111,17 @@ exports.deleteSell = (req, res) => {
         }
     });
 }
+
+exports.addSell = (req, res) => {
+    const { id, stoneid, weight, party, due } = req.body;
+    const query = `INSERT INTO sell_data (ID, STONE_ID, WEIGHT, PARTY, DUE) 
+        VALUES (?, ?, ?, ?, ?)`;
+    db.query(query, [id, stoneid, weight, party, due], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: "Failed to add sell record" });
+        } else {
+            res.status(201).json({ message: "Sell record added successfully", id: result.insertId });
+        }
+    });
+}
