@@ -54,13 +54,22 @@ const Login = () => {
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await Axios.post("http://localhost:5000/api/auth/login", loginData);
+            // const response = await Axios.post("http://localhost:5000/api/auth/login", loginData, {
+            //     withCredentials: true // ✅ Let backend set HttpOnly cookie
+            // });
+            // console.log("Login Data:", loginData);
+            const response = await Axios.post("http://localhost:5000/api/auth/login",
+                loginData,
+                {
+                    withCredentials: true, // ✅ Let backend set HttpOnly cookie
+                }
+            );
             const data = response.data;
-            // Set cookie (24h)
-            document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict;`;
+            // Set cookie(24h)
+            // document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict;`;
 
             // also store in localStorage
-            localStorage.setItem("token", data.token);
+            // localStorage.setItem("token", data.token);
 
             window.dispatchEvent(new Event('user-logged-in')); // Tell Header to recheck
 
@@ -69,7 +78,7 @@ const Login = () => {
             Navigate("/");
 
         } catch (error) {
-            if (error.response && error.response.status === 401) {
+            if (error.response && error.response.data && error.response.data.message) {
                 alert(error.response.data.message);
             } else {
                 alert("Something went wrong. Please try again.");
