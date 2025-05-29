@@ -33,14 +33,19 @@ const StockData = () => {
     const [loading, setLoading] = useState(false);
     const fetchDiamondStock = async () => {
         setLoading(true);
-        setError(null); // reset previous error
         setStocks([]);
+        setError(null); // reset previous error
 
         try {
             const response = await Axios.get('http://localhost:5000/api/get-diamondstock', {
                 withCredentials: true, // ✅ Sends cookies
             });
-            setStocks(response.data);
+            const data = response.data;
+            if (Array.isArray(data) && data.length === 0) {
+                setError("Stock not available.");
+                return;
+            }
+            setStocks(data);
         } catch (error) {
             console.error("Error fetching stock:", error);
             if (error.response?.status === 401) {
@@ -61,17 +66,18 @@ const StockData = () => {
     // </div>
 
     const handleImportExcel = (e) => {
+        setLoading(true);
         const file = e.target.files[0];
         const reader = new FileReader();
 
         reader.onload = (evt) => {
             const data = new Uint8Array(evt.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
+            setLoading(false);
+            setError(null);
             setStocks(jsonData); // Replace existing data
         };
 
@@ -145,6 +151,7 @@ const StockData = () => {
         });
     }
 
+    // prince
     const uploadData = async () => {
         if (!Array.isArray(stocks) || stocks.length === 0) {
             alert("Invalid or empty data");
@@ -152,13 +159,16 @@ const StockData = () => {
         }
         // console.log("Data to be sent to DB: ", stocks[0]);
         const sendToDB = normalizeObjectKeys(stocks);
-        // console.log("Normalized data to be sent to DB: ", sendToDB[0]);
+        setLoading(true); // Start loading
         try {
-            const res = await Axios.post('http://localhost:5000/api/upload-excel', sendToDB);
+            const res = await Axios.post('http://localhost:5000/api/upload-excel', sendToDB, { withCredentials: true });
+            fetchDiamondStock();
             alert(res.data.message);
         } catch (error) {
             console.error("Internal Error:", error);
             alert("Upload failed");
+        } finally {
+            setLoading(false);  // Stop loading
         }
     };
 
@@ -210,8 +220,10 @@ const StockData = () => {
         sym: 'EX',
         length: '',
         width: '',
+        drate: '',
         price: '',
         finalprice: '',
+        amountRs: '',
         party: '',
         due: ''
     });
@@ -233,26 +245,52 @@ const StockData = () => {
             length: '',
             width: '',
             price: '',
+            drate: '',
             finalprice: '',
+            amountRs: '',
             party: '',
             due: ''
         });
     }
 
+    // const handleChange = (e) => {
+    //     const { name, value } = e.target;
+    //     setFormData(prev => ({
+    //         ...prev,
+    //         [name]: value.toUpperCase(),
+    //     }));
+    // };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value.toUpperCase(),
-        }));
+
+        setFormData(prev => {
+            const updated = {
+                ...prev,
+                [name]: value.toUpperCase(),
+            };
+
+            const weight = parseFloat(updated.weight) || 0;
+            const price = parseFloat(updated.price) || 0;
+            const drate = parseFloat(updated.drate) || 0;
+
+            const finalPrice = price * weight;
+            const amountRs = drate * finalPrice;
+
+            return {
+                ...updated,
+                finalprice: finalPrice.toFixed(2),
+                amountRs: amountRs.toFixed(2),
+            };
+        });
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // console.log("Form Data Submitted: ", formData);
+        console.log("Form Data Submitted: ", formData);
         resetFormData();
         try {
-            Axios.post('http://localhost:5000/api/add-diamondstock', formData)
+            Axios.post('http://localhost:5000/api/add-diamondstock', formData, { withCredentials: true })
                 .then((response) => {
                     // console.log("Response from server:", response.data);
                     alert(response.data.message);
@@ -288,9 +326,9 @@ const StockData = () => {
                 stoneid: rowData.STOCKID,
                 weight: rowData.WEIGHT,
                 party: formData.party,
-                due: formData.DUE,
+                due: formData.due,
             };
-            const insertResponse = await Axios.post(
+            await Axios.post(
                 'http://localhost:5000/api/add-sell', // Your API route to insert
                 sellPayload,
                 { withCredentials: true }
@@ -315,26 +353,30 @@ const StockData = () => {
     }
 
     const handleSell = async () => {
+        if (!formData.party || formData.party.trim() === '') {
+            alert("Please enter a party before sell.");
+            setTimeout(() => {
+                partyRef?.current.focus();
+            }, 100);
+            return;
+        }
         try {
             // 1. Insert into sell_data
             const sellPayload = {
                 id: rowData.ID,
                 stoneid: rowData.STOCKID,
                 weight: rowData.WEIGHT,
-                party: rowData.PARTY,
-                due: rowData.DUE,
+                party: formData.party,
+                due: formData.due,
             };
-            const insertResponse = await Axios.post(
+            await Axios.post(
                 'http://localhost:5000/api/add-sell', // Your API route to insert
                 sellPayload,
                 { withCredentials: true }
             );
 
-            // console.log("Inserted into sell_data:", insertResponse.data);
-
             Axios.delete(`http://localhost:5000/api/delete-stock/${rowData.ID}`)
                 .then((response) => {
-                    // console.log("Response from server:", response.data);
                     alert(response.data.message);
                     resetFormData();
                     fetchDiamondStock(); // Refresh the stock data
@@ -400,6 +442,19 @@ const StockData = () => {
         });
 
         setFilteredData(result);
+    };
+
+    // use enter key as tab
+    const handleEnterAsTab = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Stop form submission
+            const form = e.target.form;
+            const elements = Array.from(form.elements).filter(el => el.tagName === 'INPUT' || el.tagName === 'SELECT');
+            const index = elements.indexOf(e.target);
+            if (index > -1 && index < elements.length - 1) {
+                elements[index + 1].focus();
+            }
+        }
     };
 
 
@@ -469,7 +524,7 @@ const StockData = () => {
                                 component="span"
                                 startIcon={<UploadFile />}
                                 sx={{ backgroundColor: '#388e3c' }}
-                                onClick={() => document.getElementById('import-excel').click()}
+                            // onClick={() => document.getElementById('import-excel').click()}
                             >
                                 Import Excel
                             </Button>
@@ -643,8 +698,31 @@ const StockData = () => {
                     <table className={styles.inputTable}>
                         <thead>
                             <tr>
+                                <th>Barcode</th>
+                                <th>Kapan</th>
+                                <th>Lot</th>
+                                <th>Tag</th>
+                                <th>Certificate</th>
+                                <th>Weight</th>
+                                <th>Shape</th>
+                                <th>Color</th>
+                                <th>Clarity</th>
+                                <th>Cut</th>
+                                <th>Pol</th>
+                                <th>Sym</th>
+                                <th>Length</th>
+                                <th>Width</th>
+                                <th>Price Per Carat</th>
+                                <th>Final Price</th>
+                                <th>DRate</th>
+                                <th>Amount (Rs)</th>
+                                <th>Party</th>
+                                <th>Due</th>
+                            </tr>
+                            <tr>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="text"
                                         name="barcode"
                                         placeholder='barcode'
@@ -655,6 +733,7 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="text"
                                         name="kapan"
                                         placeholder='kapan'
@@ -664,6 +743,7 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="text"
                                         name="lot"
                                         placeholder='lot'
@@ -673,6 +753,7 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="text"
                                         name="tag"
                                         placeholder='tag'
@@ -682,6 +763,7 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="text"
                                         name="certificate"
                                         placeholder='certificate'
@@ -691,16 +773,18 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="number"
                                         step="any"
                                         name="weight"
                                         placeholder='weight'
                                         value={formData.weight}
                                         onChange={handleChange}
+                                        required
                                     />
                                 </td>
                                 <td>
-                                    <select name="shape" id="" value={formData.shape} onChange={handleChange}>
+                                    <select name="shape" id="" value={formData.shape} onChange={handleChange} onKeyDown={handleEnterAsTab}>
                                         {/* <option value="Shape">Shape</option> */}
                                         {
                                             shapeData.map((shape) => (
@@ -712,7 +796,7 @@ const StockData = () => {
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="color" id="" value={formData.color} onChange={handleChange}>
+                                    <select name="color" id="" value={formData.color} onChange={handleChange} onKeyDown={handleEnterAsTab}>
                                         {/* <option value="Shape">Color</option> */}
                                         {
                                             colorData.map((color) => (
@@ -724,7 +808,7 @@ const StockData = () => {
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="clarity" id="" value={formData.clarity} onChange={handleChange}>
+                                    <select name="clarity" id="" value={formData.clarity} onChange={handleChange} onKeyDown={handleEnterAsTab}>
                                         {/* <option value="Shape">Clarity</option> */}
                                         {
                                             clarityData.map((clarity) => (
@@ -736,7 +820,7 @@ const StockData = () => {
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="cut" id="" value={formData.cut} onChange={handleChange}>
+                                    <select name="cut" id="" value={formData.cut} onChange={handleChange} onKeyDown={handleEnterAsTab}>
                                         {/* <option value="Shape">Cut</option> */}
                                         {
                                             cutData.map((cut) => (
@@ -748,7 +832,7 @@ const StockData = () => {
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="pol" id="" value={formData.pol} onChange={handleChange}>
+                                    <select name="pol" id="" value={formData.pol} onChange={handleChange} onKeyDown={handleEnterAsTab}>
                                         {/* <option value="Shape">Pol</option> */}
                                         {
                                             cutData.map((cut) => (
@@ -760,7 +844,7 @@ const StockData = () => {
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="sym" id="" value={formData.sym} onChange={handleChange}>
+                                    <select name="sym" id="" value={formData.sym} onChange={handleChange} onKeyDown={handleEnterAsTab}>
                                         {/* <option value="Shape">Sym</option> */}
                                         {
                                             cutData.map((cut) => (
@@ -773,6 +857,7 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="number"
                                         step="any"
                                         name="length"
@@ -783,6 +868,7 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="number"
                                         step="any"
                                         name="width"
@@ -796,6 +882,7 @@ const StockData = () => {
                                 {/* weight * price per carat = final price */}
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="number"
                                         step="any"
                                         name="price"
@@ -806,16 +893,42 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="number"
                                         step="any"
                                         name="finalprice"
                                         placeholder='final price'
                                         value={formData.finalprice}
                                         onChange={handleChange}
+                                        readOnly
                                     />
                                 </td>
                                 <td>
                                     <input
+                                        onKeyDown={handleEnterAsTab}
+                                        type="number"
+                                        step="any"
+                                        name="drate"
+                                        placeholder='Dollar Rate'
+                                        value={formData.drate}
+                                        onChange={handleChange}
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        onKeyDown={handleEnterAsTab}
+                                        type="number"
+                                        step="any"
+                                        name="amountRs"
+                                        placeholder='Rs Amt'
+                                        value={formData.amountRs}
+                                        onChange={handleChange}
+                                        readOnly
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        onKeyDown={handleEnterAsTab}
                                         type="text"
                                         name="party"
                                         placeholder='party'
@@ -826,6 +939,7 @@ const StockData = () => {
                                 </td>
                                 <td>
                                     <input
+                                        // onKeyDown={handleEnterAsTab}
                                         type="number"
                                         name="due"
                                         placeholder='due'
@@ -856,7 +970,8 @@ const StockData = () => {
                     >
                         <CircularProgress />
                         <Typography variant="body1" mt={2}>
-                            Loading stock data...
+                            {/* Loading stock data... */}
+                            Loading...
                         </Typography>
                     </Box>
                 ) : (

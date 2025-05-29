@@ -60,13 +60,14 @@ exports.getFL = (req, res) => {
 
 // Diamond Stock Routes
 exports.addDiamondStock = (req, res) => {
-    const { barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, finalprice, party, due } = req.body;
+    const userId = req.user.id;
+    const { barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, party, due } = req.body;
     const query = `INSERT INTO diamond_stock 
-        (BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, FINAL_PRICE, PARTY, DUE)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE, PARTY, DUE, STATUS)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
     // ON DUPLICATE KEY UPDATE
-    db.query(query, [barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, finalprice, party, due], (err, result) => {
+    db.query(query, [userId, barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, party, due, 'AVAILABLE'], (err, result) => {
         if (err) {
             console.error(err);
             res.status(500).json({ error: "Failed to add diamond stock" });
@@ -123,5 +124,105 @@ exports.addSell = (req, res) => {
         } else {
             res.status(201).json({ message: "Sell record added successfully", id: result.insertId });
         }
+    });
+}
+
+exports.uploadExcel = async (req, res) => {
+    const data = req.body;
+    const userId = req.user.id;
+    // console.log(data[0]);
+    if (!Array.isArray(data) || data.length === 0) {
+        return res.status(400).json({ message: 'No data received' });
+    }
+
+    try {
+        const dbPromise = db.promise(); // ✅ get a promise-compatible wrapper
+        // Get list of valid column names from the 'stocks' table
+        const [columnsRows] = await dbPromise.query("SHOW COLUMNS FROM diamond_stock");
+        // console.log('Columns:', columnsRows);
+        const validColumns = columnsRows.map(row => row.Field);
+
+        for (const stock of data) {
+            const { STOCKID } = stock;
+            if (!STOCKID) continue;
+
+            // Filter keys to only include valid columns
+            const filteredStock = {};
+            for (const key of Object.keys(stock)) {
+                if (validColumns.includes(key)) {
+                    filteredStock[key] = stock[key];
+                }
+            }
+
+            // Skip if no valid fields remain
+            if (Object.keys(filteredStock).length === 0) continue;
+
+            // Delete old entry
+            await dbPromise.query(`DELETE FROM DIAMOND_STOCK WHERE STOCKID = ?`, [STOCKID]);
+
+            // Insert new entry
+            // await dbPromise.query(`INSERT INTO DIAMOND_STOCK SET ?`, [filteredStock]);
+        }
+
+        const insertQuery = `
+        INSERT INTO DIAMOND_STOCK (
+            USER_ID, KAPAN, PACKET, TAG, STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, 
+            FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO,
+            CITY, STATE, COUNTRY, TREATMENT, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, 
+            RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT, FINAL_PRICE, HEART_ARROW, STAR_LENGTH, 
+            LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO, CULET_SIZE, CULET_CONDITION, 
+            GIRDLE_THIN, GIRDLE_THICK, GIRDLE_CONDITION, GIRDLE_PER, CERTIFICATE_IMAGE, 
+            FLUORESCENCE_COLOR, ADMIN_ID, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM, TINGE, 
+            FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, 
+            CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
+        ) VALUES ?
+        `;
+
+        const values = data.map(item => [
+            userId,
+            item["KAPAN"] || '', item["PACKET"] || '', item["TAG"] || '', item["STOCKID"] || '',
+            item["SHAPE"] || '', item["WEIGHT"] || '', item["COLOR"] || '', item["CLARITY"] || '',
+            item["CUT"] || '', item["POLISH"] || '', item["SYMMETRY"] || '', item["FLUORESCENCE"] || '',
+            item["LENGTH"] || '', item["WIDTH"] || '', item["HEIGHT"] || '', item["SHADE"] || '',
+            item["MILKY"] || '', item["EYE_CLEAN"] || '', item["LAB"] || '', item["CERTIFICATE_COMMENT"] || '',
+            item["REPORT_NO"] || '', item["CITY"] || '', item["STATE"] || '', item["COUNTRY"] || '',
+            item["TREATMENT"] || '', item["DEPTH_PERCENT"] || '', item["TABLE_PERCENT"] || '', item["DIAMOND_VIDEO"] || '',
+            item["DIAMOND_IMAGE"] || '', item["RAP_PER_CARAT"] || '', item["PRICE_PER_CARAT"] || '', item["RAP_PRICE"] || '',
+            item["DISCOUNT"] || '', item["FINAL_PRICE"] || '', item["HEART_ARROW"] || '', item["STAR_LENGTH"] || '',
+            item["LASER_DESCRIPTION"] || '', item["GROWTH_TYPE"] || '', item["KEY_TO_SYMBOL"] || '', item["LW_RATIO"] || '',
+            item["CULET_SIZE"] || '', item["CULET_CONDITION"] || '', item["GIRDLE_THIN"] || '', item["GIRDLE_THICK"] || '',
+            item["GIRDLE_CONDITION"] || '', item["GIRDLE_PER"] || '', item["CERTIFICATE_IMAGE"] || '', item["FLUORESCENCE_COLOR"] || '',
+            item["ADMIN_ID"] || '', item["STATUS"] || 'AVAILABLE', item["DIAMOND_TYPE"] || '', item["IS_ACTIVE"] || '',
+            item["BGM"] || '', item["NO_BGM"] || '', item["TINGE"] || '', item["FANCY_COLOR"] || '',
+            item["FANCY_COLOR_INTENSITY"] || '', item["FANCY_COLOR_OVERTONE"] || '', item["CERTIFICATE_NUMBER"] || '', item["CROWN_HEIGHT"] || '',
+            item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || ''
+        ]);
+        // console.log('Column Count:', values[0].length);
+        const [result] = await dbPromise.query(insertQuery, [values]);
+        res.json({ message: `Inserted ${result.affectedRows} rows` });
+
+
+        // db.query(insertQuery, [values], (err, result) => {
+        //     if (err) {
+        //         console.error('Insert error:', err);
+        //         return res.status(500).json({ message: 'DB insert failed' });
+        //     }
+        //     res.json({ message: `Inserted ${result.affectedRows} rows` });
+        // });
+    } catch (error) {
+        console.error("Upload error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+exports.getDiamondStock = (req, res) => {
+    const userId = req.user.id;
+    const query = 'SELECT * FROM DIAMOND_STOCK WHERE USER_ID = ?';
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('Error fetching data:', err);
+            return res.status(500).json({ message: 'Error fetching data' });
+        }
+        res.json(results);
     });
 }
