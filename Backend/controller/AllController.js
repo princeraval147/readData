@@ -79,13 +79,13 @@ exports.addDiamondStock = (req, res) => {
 
 exports.updateStock = (req, res) => {
     const { id } = req.params;
-    const { party } = req.body;
+    const { status, party } = req.body;
     if (!party) {
         return res.status(400).json({ message: "Party is required." });
     }
     console.log("Updating diamond stock with ID:", id, "to party:", party);
-    const query = "UPDATE diamond_stock SET STATUS = 'HOLD', PARTY = ? WHERE ID = ?";
-    db.query(query, [party, id], (err, result) => {
+    const query = "UPDATE diamond_stock SET STATUS = ?, PARTY = ? WHERE ID = ?";
+    db.query(query, [status, party, id], (err, result) => {
         if (err) {
             console.error(err);
             res.status(500).json({ error: "Failed to update diamond stock" });
@@ -114,10 +114,11 @@ exports.deleteSell = (req, res) => {
 }
 
 exports.addSell = (req, res) => {
-    const { id, stoneid, weight, party, due } = req.body;
-    const query = `INSERT INTO sell_data (ID, STONE_ID, WEIGHT, PARTY, DUE) 
-        VALUES (?, ?, ?, ?, ?)`;
-    db.query(query, [id, stoneid, weight, party, due], (err, result) => {
+    const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due } = req.body;
+    console.log("data = ", req.body);
+    const query = `INSERT INTO sell_data (ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, DUE) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    db.query(query, [id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due], (err, result) => {
         if (err) {
             console.error(err);
             res.status(500).json({ error: "Failed to add sell record" });
