@@ -17,13 +17,17 @@ import { Select, MenuItem, FormControl, InputLabel, Button, TextField } from '@m
 // import debounce from 'lodash.debounce';
 import StockTable from './StockTable';
 import { Stack } from '@mui/material';
-import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart } from '@mui/icons-material';
+import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart, CheckCircle } from '@mui/icons-material';
 
 
 const StockData = () => {
 
     const barcoderef = useRef(null);
     const partyRef = useRef(null);
+    const priceRef = useRef(null);
+    const finalPriceRef = useRef(null);
+    const drateRef = useRef(null);
+    const amountRsRef = useRef(null);
 
     const [stocks, setStocks] = useState([]);
     const [error, setError] = useState(null);
@@ -309,43 +313,69 @@ const StockData = () => {
     }
 
     const [rowData, setRowData] = useState([]);
-
+    console.log("Status = ", rowData.STATUS)
     const handleStatus = async () => {
-        const party = formData.party;
-        if (!formData.party || formData.party.trim() === '') {
-            alert("Please enter a party before putting stock on hold.");
-            setTimeout(() => {
-                partyRef?.current.focus();
-            }, 100);
-            return;
+        const isHolding = rowData.STATUS === 'HOLD';
+        const newStatus = isHolding ? 'AVAILABLE' : 'HOLD';
+        console.log("Is holding = ", isHolding);
+        console.log("New Status = ", newStatus);
+        // required
+        if (!isHolding) {
+            const requiredFields = [
+                { field: 'party', ref: partyRef, label: 'Party' },
+                { field: 'price', ref: priceRef, label: 'Price' },
+                { field: 'finalprice', ref: finalPriceRef, label: 'Final Price' },
+                { field: 'drate', ref: drateRef, label: 'Dollar Rate' },
+                { field: 'amountRs', ref: amountRsRef, label: 'Amount Rs' },
+            ];
+
+            for (const { field, ref, label } of requiredFields) {
+                if (!formData[field]) {
+                    alert(`Please enter ${label}.`);
+                    setTimeout(() => ref?.current?.focus(), 100);
+                    return;
+                }
+            }
         }
 
         try {
-            const sellPayload = {
-                id: rowData.ID,
-                stoneid: rowData.STOCKID,
-                weight: rowData.WEIGHT,
-                party: formData.party,
-                due: formData.due,
-            };
-            await Axios.post(
-                'http://localhost:5000/api/add-sell', // Your API route to insert
-                sellPayload,
-                { withCredentials: true }
-            );
-            // console.log("Inserted into sell_data:", insertResponse.data);
+            if (!isHolding) {
+                // If converting to HOLD, add a sell record
+                const sellPayload = {
+                    id: rowData.ID,
+                    stoneid: rowData.STOCKID,
+                    weight: rowData.WEIGHT,
+                    price: formData.price,
+                    finalprice: formData.finalprice,
+                    drate: formData.drate,
+                    amountRs: formData.amountRs,
+                    status: newStatus,
+                    party: formData.party,
+                    due: formData.due,
+                };
+                console.log("Data send to DB = ", sellPayload);
+                await Axios.post('http://localhost:5000/api/add-sell', sellPayload, { withCredentials: true });
+            }
 
-            Axios.put(`http://localhost:5000/api/update-status/${rowData.ID}`, { party })
+            // Update status either way
+            Axios.put(`http://localhost:5000/api/update-status/${rowData.ID}`, { status: newStatus, party: formData.party })
                 .then((response) => {
                     // console.log("Response from server:", response.data);
-                    alert(response.data.message);
+                    // alert(response.data.message);
+                    alert(`Status updated to ${newStatus}.`);
+                    setRowData([]);
                     resetFormData();
-                    fetchDiamondStock();
+                    setStocks(prev =>
+                        prev.map(stock =>
+                            stock.ID === rowData.ID ? { ...stock, STATUS: newStatus, party: formData.party } : stock
+                        )
+                    );
                 })
                 .catch((error) => {
                     console.error("Error updating status:", error);
                     alert("Failed to update status");
                 });
+
         } catch (error) {
             console.error("Error in handleStatus:", error);
             alert("Failed to update status");
@@ -353,19 +383,59 @@ const StockData = () => {
     }
 
     const handleSell = async () => {
-        if (!formData.party || formData.party.trim() === '') {
-            alert("Please enter a party before sell.");
+        // required
+        const { party, price, finalprice, drate, amountRs } = formData;
+        if (!party || party.trim() === '') {
+            alert("Please enter a Party.");
             setTimeout(() => {
                 partyRef?.current.focus();
             }, 100);
             return;
         }
+
+        if (!price) {
+            alert("Please enter Price.");
+            setTimeout(() => {
+                priceRef?.current.focus();
+            }, 100);
+            return;
+        }
+
+        if (!finalprice) {
+            alert("Please enter Final Price.");
+            setTimeout(() => {
+                finalPriceRef?.current.focus();
+            }, 100);
+            return;
+        }
+
+        if (!drate) {
+            alert("Please enter Dollar Rate.");
+            setTimeout(() => {
+                drateRef?.current.focus();
+            }, 100);
+            return;
+        }
+
+        if (!amountRs) {
+            alert("Please enter Amount Rs.");
+            setTimeout(() => {
+                amountRsRef?.current.focus();
+            }, 100);
+            return;
+        }
+
         try {
             // 1. Insert into sell_data
             const sellPayload = {
                 id: rowData.ID,
                 stoneid: rowData.STOCKID,
                 weight: rowData.WEIGHT,
+                price: formData.price,
+                finalprice: formData.finalprice,
+                drate: formData.drate,
+                amountRs: formData.amountRs,
+                status: "SOLD",
                 party: formData.party,
                 due: formData.due,
             };
@@ -378,6 +448,7 @@ const StockData = () => {
             Axios.delete(`http://localhost:5000/api/delete-stock/${rowData.ID}`)
                 .then((response) => {
                     alert(response.data.message);
+                    setRowData([]);
                     resetFormData();
                     fetchDiamondStock(); // Refresh the stock data
                 })
@@ -415,8 +486,16 @@ const StockData = () => {
             due: row.DUE || ''
         });
     }, []);
-
+    // Search Filter
+    const shapeMap = {
+        rd: "ROUND",
+        round: "ROUND",
+        pr: "PRINCESS",
+        princess: "princess",
+        // add other shapes here...
+    };
     const [filters, setFilters] = useState({
+        shape: '',
         color: '',
         clarity: '',
     });
@@ -430,15 +509,22 @@ const StockData = () => {
         // const max = parseFloat(filters.weightMax) || 25;
         const min = weightMin;
         const max = weightMax;
+        const normalize = str => str?.toLowerCase().replace(/\s+/g, '') || '';  // Reomve space (eg: VS 1 - VS1)
+        const getShapeKey = (str) => {
+            const norm = normalize(str);
+            return shapeMap[norm] || norm; // fallback to normalized if no mapping found
+        };
 
         const result = stocks.filter((stock) => {
             const rawWeight = stock.WEIGHT?.toString().replace(',', '.').trim();
             const weight = parseFloat(rawWeight) || 0;
             const withinWeight = weight >= min && weight <= max;
             const matchesColor = !filters.color || stock.COLOR === filters.color;
-            const matchesClarity = !filters.clarity || stock.CLARITY === filters.clarity;
+            const matchesClarity = !filters.clarity || normalize(stock.CLARITY) === normalize(filters.clarity);
+            const matchesShape = !filters.shape || getShapeKey(stock.SHAPE) === getShapeKey(filters.shape);
+            console.log("matchesShape = ", filters.shape, "stock = ", stock.SHAPE)
 
-            return withinWeight && matchesColor && matchesClarity;
+            return withinWeight && matchesColor && matchesClarity && matchesShape;
         });
 
         setFilteredData(result);
@@ -560,12 +646,15 @@ const StockData = () => {
 
                         <Button
                             variant="contained"
-                            color="warning"
-                            startIcon={<Pause />}
+                            // color="warning"
+                            // startIcon={<Pause />}
+                            color={rowData.STATUS === 'HOLD' ? 'success' : 'warning'}
+                            startIcon={rowData.STATUS === 'HOLD' ? <CheckCircle /> : <Pause />}
                             onClick={handleStatus}
                             disabled={rowData.length === 0}
                         >
-                            Hold
+                            {/* Hold */}
+                            {rowData.STATUS === 'HOLD' ? 'Make Available' : 'Hold'}
                         </Button>
 
                         <Button
@@ -643,6 +732,21 @@ const StockData = () => {
                         </Box>
                     </Box>
 
+                    {/* Shape Filter */}
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <InputLabel>Shape</InputLabel>
+                        <Select
+                            value={filters.shape}
+                            label="shape"
+                            onChange={(e) => setFilters(prev => ({ ...prev, shape: e.target.value }))}
+                        >
+                            <MenuItem value="">All Shape</MenuItem>
+                            {shapeData.map((shape) => (
+                                <MenuItem key={shape.SID} value={shape.SHAPE}>{shape.SHAPE}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
                     {/* Color Filter */}
                     <FormControl size="small" sx={{ minWidth: 120 }}>
                         <InputLabel>Color</InputLabel>
@@ -694,266 +798,272 @@ const StockData = () => {
                 </Box>
 
                 {/* form */}
-                <form action="" onSubmit={handleSubmit}>
-                    <table className={styles.inputTable}>
-                        <thead>
-                            <tr>
-                                <th>Barcode</th>
-                                <th>Kapan</th>
-                                <th>Lot</th>
-                                <th>Tag</th>
-                                <th>Certificate</th>
-                                <th>Weight</th>
-                                <th>Shape</th>
-                                <th>Color</th>
-                                <th>Clarity</th>
-                                <th>Cut</th>
-                                <th>Pol</th>
-                                <th>Sym</th>
-                                <th>Length</th>
-                                <th>Width</th>
-                                <th>Price Per Carat</th>
-                                <th>Final Price</th>
-                                <th>DRate</th>
-                                <th>Amount (Rs)</th>
-                                <th>Party</th>
-                                <th>Due</th>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="text"
-                                        name="barcode"
-                                        placeholder='barcode'
-                                        value={formData.barcode}
-                                        onChange={handleChange}
-                                        ref={barcoderef}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="text"
-                                        name="kapan"
-                                        placeholder='kapan'
-                                        value={formData.kapan}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="text"
-                                        name="lot"
-                                        placeholder='lot'
-                                        value={formData.lot}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="text"
-                                        name="tag"
-                                        placeholder='tag'
-                                        value={formData.tag}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="text"
-                                        name="certificate"
-                                        placeholder='certificate'
-                                        value={formData.certificate}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        step="any"
-                                        name="weight"
-                                        placeholder='weight'
-                                        value={formData.weight}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                </td>
-                                <td>
-                                    <select name="shape" id="" value={formData.shape} onChange={handleChange} onKeyDown={handleEnterAsTab}>
-                                        {/* <option value="Shape">Shape</option> */}
-                                        {
-                                            shapeData.map((shape) => (
-                                                <option key={shape.SID} value={shape.SHAPE}>
-                                                    {shape.SHAPE}
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="color" id="" value={formData.color} onChange={handleChange} onKeyDown={handleEnterAsTab}>
-                                        {/* <option value="Shape">Color</option> */}
-                                        {
-                                            colorData.map((color) => (
-                                                <option key={color.CID} value={color.COLOR}>
-                                                    {color.COLOR}
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="clarity" id="" value={formData.clarity} onChange={handleChange} onKeyDown={handleEnterAsTab}>
-                                        {/* <option value="Shape">Clarity</option> */}
-                                        {
-                                            clarityData.map((clarity) => (
-                                                <option key={clarity.CID} value={clarity.CLARITY}>
-                                                    {clarity.CLARITY}
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="cut" id="" value={formData.cut} onChange={handleChange} onKeyDown={handleEnterAsTab}>
-                                        {/* <option value="Shape">Cut</option> */}
-                                        {
-                                            cutData.map((cut) => (
-                                                <option key={cut.CID} value={cut.CUT}>
-                                                    {cut.CUT}
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="pol" id="" value={formData.pol} onChange={handleChange} onKeyDown={handleEnterAsTab}>
-                                        {/* <option value="Shape">Pol</option> */}
-                                        {
-                                            cutData.map((cut) => (
-                                                <option key={cut.CID} value={cut.CUT}>
-                                                    {cut.CUT}
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                                <td>
-                                    <select name="sym" id="" value={formData.sym} onChange={handleChange} onKeyDown={handleEnterAsTab}>
-                                        {/* <option value="Shape">Sym</option> */}
-                                        {
-                                            cutData.map((cut) => (
-                                                <option key={cut.CID} value={cut.CUT}>
-                                                    {cut.CUT}
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        step="any"
-                                        name="length"
-                                        placeholder='length'
-                                        value={formData.length}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        step="any"
-                                        name="width"
-                                        placeholder='width'
-                                        value={formData.width}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                {/* price per carat */}
-                                {/* final price */}
-                                {/* weight * price per carat = final price */}
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        step="any"
-                                        name="price"
-                                        placeholder='price per carat'
-                                        value={formData.price}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        step="any"
-                                        name="finalprice"
-                                        placeholder='final price'
-                                        value={formData.finalprice}
-                                        onChange={handleChange}
-                                        readOnly
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        step="any"
-                                        name="drate"
-                                        placeholder='Dollar Rate'
-                                        value={formData.drate}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        step="any"
-                                        name="amountRs"
-                                        placeholder='Rs Amt'
-                                        value={formData.amountRs}
-                                        onChange={handleChange}
-                                        readOnly
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        onKeyDown={handleEnterAsTab}
-                                        type="text"
-                                        name="party"
-                                        placeholder='party'
-                                        value={formData.party}
-                                        onChange={handleChange}
-                                        ref={partyRef}
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        // onKeyDown={handleEnterAsTab}
-                                        type="number"
-                                        name="due"
-                                        placeholder='due'
-                                        value={formData.due}
-                                        onChange={handleChange}
-                                    />
-                                </td>
-                                <td style={{ display: 'none' }}>
-                                    <input type="submit" />
-                                </td>
-                            </tr>
-                        </thead>
-                    </table>
-                </form>
+                <div style={{ overflowX: "auto" }}>
+                    <form action="" onSubmit={handleSubmit}>
+                        <table className={styles.inputTable}>
+                            <thead>
+                                <tr>
+                                    <th>Barcode</th>
+                                    <th>Kapan</th>
+                                    <th>Lot</th>
+                                    <th>Tag</th>
+                                    <th>Certificate</th>
+                                    <th>Weight</th>
+                                    <th>Shape</th>
+                                    <th>Color</th>
+                                    <th>Clarity</th>
+                                    <th>Cut</th>
+                                    <th>Pol</th>
+                                    <th>Sym</th>
+                                    <th>Length</th>
+                                    <th>Width</th>
+                                    <th>Price Per Carat</th>
+                                    <th>Final Price</th>
+                                    <th>DRate</th>
+                                    <th>Amount (Rs)</th>
+                                    <th>Party</th>
+                                    <th>Due</th>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="text"
+                                            name="barcode"
+                                            placeholder='barcode'
+                                            value={formData.barcode}
+                                            onChange={handleChange}
+                                            ref={barcoderef}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="text"
+                                            name="kapan"
+                                            placeholder='kapan'
+                                            value={formData.kapan}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="text"
+                                            name="lot"
+                                            placeholder='lot'
+                                            value={formData.lot}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="text"
+                                            name="tag"
+                                            placeholder='tag'
+                                            value={formData.tag}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="text"
+                                            name="certificate"
+                                            placeholder='certificate'
+                                            value={formData.certificate}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            step="any"
+                                            name="weight"
+                                            placeholder='weight'
+                                            value={formData.weight}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </td>
+                                    <td>
+                                        <select name="shape" id="" value={formData.shape} onChange={handleChange} onKeyDown={handleEnterAsTab}>
+                                            {/* <option value="Shape">Shape</option> */}
+                                            {
+                                                shapeData.map((shape) => (
+                                                    <option key={shape.SID} value={shape.SHAPE}>
+                                                        {shape.SHAPE}
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="color" id="" value={formData.color} onChange={handleChange} onKeyDown={handleEnterAsTab}>
+                                            {/* <option value="Shape">Color</option> */}
+                                            {
+                                                colorData.map((color) => (
+                                                    <option key={color.CID} value={color.COLOR}>
+                                                        {color.COLOR}
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="clarity" id="" value={formData.clarity} onChange={handleChange} onKeyDown={handleEnterAsTab}>
+                                            {/* <option value="Shape">Clarity</option> */}
+                                            {
+                                                clarityData.map((clarity) => (
+                                                    <option key={clarity.CID} value={clarity.CLARITY}>
+                                                        {clarity.CLARITY}
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="cut" id="" value={formData.cut} onChange={handleChange} onKeyDown={handleEnterAsTab}>
+                                            {/* <option value="Shape">Cut</option> */}
+                                            {
+                                                cutData.map((cut) => (
+                                                    <option key={cut.CID} value={cut.CUT}>
+                                                        {cut.CUT}
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="pol" id="" value={formData.pol} onChange={handleChange} onKeyDown={handleEnterAsTab}>
+                                            {/* <option value="Shape">Pol</option> */}
+                                            {
+                                                cutData.map((cut) => (
+                                                    <option key={cut.CID} value={cut.CUT}>
+                                                        {cut.CUT}
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="sym" id="" value={formData.sym} onChange={handleChange} onKeyDown={handleEnterAsTab}>
+                                            {/* <option value="Shape">Sym</option> */}
+                                            {
+                                                cutData.map((cut) => (
+                                                    <option key={cut.CID} value={cut.CUT}>
+                                                        {cut.CUT}
+                                                    </option>
+                                                ))
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            step="any"
+                                            name="length"
+                                            placeholder='length'
+                                            value={formData.length}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            step="any"
+                                            name="width"
+                                            placeholder='width'
+                                            value={formData.width}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    {/* price per carat */}
+                                    {/* final price */}
+                                    {/* weight * price per carat = final price */}
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            step="any"
+                                            name="price"
+                                            placeholder='price per carat'
+                                            value={formData.price}
+                                            onChange={handleChange}
+                                            ref={priceRef}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            step="any"
+                                            name="finalprice"
+                                            placeholder='final price'
+                                            value={formData.finalprice}
+                                            onChange={handleChange}
+                                            ref={finalPriceRef}
+                                            readOnly
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            step="any"
+                                            name="drate"
+                                            placeholder='Dollar Rate'
+                                            value={formData.drate}
+                                            onChange={handleChange}
+                                            ref={drateRef}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            step="any"
+                                            name="amountRs"
+                                            placeholder='Rs Amt'
+                                            value={formData.amountRs}
+                                            onChange={handleChange}
+                                            ref={amountRsRef}
+                                            readOnly
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="text"
+                                            name="party"
+                                            placeholder='party'
+                                            value={formData.party}
+                                            onChange={handleChange}
+                                            ref={partyRef}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            // onKeyDown={handleEnterAsTab}
+                                            type="number"
+                                            name="due"
+                                            placeholder='due'
+                                            value={formData.due}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td style={{ display: 'none' }}>
+                                        <input type="submit" />
+                                    </td>
+                                </tr>
+                            </thead>
+                        </table>
+                    </form>
+                </div>
 
                 {loading ? (
                     <Box
