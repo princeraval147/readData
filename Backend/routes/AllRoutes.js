@@ -7,11 +7,20 @@ const {
     updateStock,
     addSell,
     uploadExcel,
-    getDiamondStock
+    getDiamondStock,
+    register,
+    // approve,
+    login,
+    shareApi,
+    SharedAPI
 } = require("../controller/AllController");
 
 const authenticateToken = require('../middleware/authMiddleware');
 
+// user register/login
+router.post("/api/auth/register", register);
+// router.post("/api/auth/approve", approve);
+router.post("/api/auth/login", login);
 
 // GLobal Routes
 router.get("/api/shape", getShape);
@@ -28,6 +37,9 @@ router.put("/api/update-status/:id", updateStock);
 router.delete("/api/delete-stock/:id", deleteSell);
 router.post("/api/add-sell", addSell);
 
+// Share API
+router.post("/api/share-api", authenticateToken, shareApi);
+router.get("/api/shared-api-data", authenticateToken, SharedAPI);
 
 
 module.exports = router;
