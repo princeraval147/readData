@@ -134,6 +134,9 @@ const Header = () => {
                                 <NavLink to='/stock-data'>Stock Data</NavLink>
                             </li>
                             <li>
+                                <NavLink to='/share-api'>Share API</NavLink>
+                            </li>
+                            <li>
                                 <button onClick={logout}>Logout</button>
                             </li>
                         </>

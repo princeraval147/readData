@@ -7,6 +7,7 @@ import Home from './components/Home/Home';
 import Login from './components/User/Login';
 import ReadCSV from './components/ReadCSV/ReadCSV';
 import StockData from './components/Stock Data/StockData';
+import ShareAPI from './components/ShareAPI/ShareAPI';
 // import ProtectedRoute from './ProtectedRoute';
 
 const Router = createBrowserRouter(
@@ -19,6 +20,7 @@ const Router = createBrowserRouter(
             <Route path='*' element={<Error />} />
             {/* <Route element={<ProtectedRoute />}> */}
             <Route path='stock-data' element={<StockData />} />
+            <Route path='share-api' element={<ShareAPI />} />
             {/* </Route> */}
         </Route>
     )
