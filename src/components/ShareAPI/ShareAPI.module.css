@@ -1,0 +1,20 @@
+/* Add this in a CSS file or in a <style> tag */
+.formContainer {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+/* .formContainer input {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.3rem;
+    margin-bottom: 1rem;
+} */
+/* 
+.formContainer button {
+    padding: 0.5rem 1rem;
+} */
