@@ -59,6 +59,10 @@ app.use(allRoutes);
 // app.get('/', (req, res, next) => {
 //     throw new Error('BROKEN');
 // });
+
+app.get('/', (req, res) => {
+    res.send('Backend is working!');
+});
 app.use((err, req, res, next) => {
     console.log("got error");
     console.error(err.stack);
