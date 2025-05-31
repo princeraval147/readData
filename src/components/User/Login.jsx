@@ -2,6 +2,7 @@ import { useState } from "react";
 import styles from "./Login.module.css";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
+import API from '../../API'
 
 const Login = () => {
     const [activeTab, setActiveTab] = useState("signup");
@@ -31,7 +32,7 @@ const Login = () => {
         e.preventDefault();
         console.log("Signup Data:", signupData);
         try {
-            const response = await Axios.post("http://localhost:5000/api/auth/register", signupData);
+            const response = await API.post("/auth/register", signupData);
             const data = response.data;
             alert("Registration successful!");
             setResetStep(0);
@@ -54,11 +55,7 @@ const Login = () => {
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         try {
-            // const response = await Axios.post("http://localhost:5000/api/auth/login", loginData, {
-            //     withCredentials: true // ✅ Let backend set HttpOnly cookie
-            // });
-            // console.log("Login Data:", loginData);
-            const response = await Axios.post("http://localhost:5000/api/auth/login",
+            const response = await API.post("/auth/login",
                 loginData,
                 {
                     withCredentials: true, // ✅ Let backend set HttpOnly cookie
@@ -74,14 +71,15 @@ const Login = () => {
             window.dispatchEvent(new Event('user-logged-in')); // Tell Header to recheck
 
             alert(data.message);
-            // Navigate("/view-stock");
-            Navigate("/");
+            Navigate("/stock-data");
+            // Navigate("/");
 
         } catch (error) {
             if (error.response && error.response.data && error.response.data.message) {
                 alert(error.response.data.message);
             } else {
                 alert("Something went wrong. Please try again.");
+                console.error("Error while Login : ", error);
             }
         }
     };
@@ -90,7 +88,7 @@ const Login = () => {
     const handleForgotPassword = async (e) => {
         e.preventDefault();
 
-        const response = await Axios.post("http://localhost:5000/api/auth/forgot-password", {
+        const response = await API.post("/auth/forgot-password", {
             email: e.target.email.value,
             password: e.target.password.value,
         });
