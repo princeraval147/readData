@@ -228,7 +228,7 @@ app.post('/api/auth/forgot-password', (req, res) => {
 
 
 // Assuming you store tokens in DB table `tokens` with columns: USER_ID, TOKEN
-app.get('/api/auth/validate-token', (req, res) => {
+app.get('/api/auth/validate-token', async (req, res) => {
     // const authHeader = req.headers['authorization'];
     const token = req.cookies.token; // Get token from HttpOnly cookie
     // console.log('Token From cookie :', token);
@@ -240,20 +240,40 @@ app.get('/api/auth/validate-token', (req, res) => {
 
     // Check token in DB
     const query = 'SELECT * FROM tokens WHERE TOKEN = ?';
-    db.query(query, [token], (err, results) => {
-        if (err) return res.status(500).json({ valid: false, message: 'Server error' });
+
+    try {
+        const [results] = await db.query(query, [token]);
+
         if (results.length === 0) {
             return res.status(401).json({ valid: false, message: 'Invalid token' });
         }
-        // Token is valid, you can send back user info if you want
+
         return res.json({
             valid: true,
             user: {
                 id: results[0].USER_ID,
-                // Add more user info if needed by joining tables
             }
         });
-    });
+
+    } catch (err) {
+        console.error('Token validation error:', err);
+        res.status(500).json({ valid: false, message: 'Server error' });
+    }
+
+    // db.query(query, [token], (err, results) => {
+    //     if (err) return res.status(500).json({ valid: false, message: 'Server error' });
+    //     if (results.length === 0) {
+    //         return res.status(401).json({ valid: false, message: 'Invalid token' });
+    //     }
+    //     // Token is valid, you can send back user info if you want
+    //     return res.json({
+    //         valid: true,
+    //         user: {
+    //             id: results[0].USER_ID,
+    //             // Add more user info if needed by joining tables
+    //         }
+    //     });
+    // });
 });
 
 app.post('/api/auth/logout', (req, res) => {

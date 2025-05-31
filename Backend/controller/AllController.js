@@ -82,7 +82,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
         // 1. Find user
-        const [users] = await db.query('SELECT * FROM users WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
+        const [users] = await db.query('SELECT * FROM USERS WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
 
         if (users.length === 0) {
             return res.status(401).json({ message: 'Invalid email or password' });
