@@ -276,14 +276,26 @@ app.get('/api/auth/validate-token', async (req, res) => {
     // });
 });
 
+// app.post('/api/auth/logout', (req, res) => {
+//     res.cookie('token', '', {
+//         httpOnly: true,
+//         expires: new Date(0),
+//         path: '/'
+//     });
+//     res.json({ message: 'Logged out' });
+// });
+// Production logout
 app.post('/api/auth/logout', (req, res) => {
     res.cookie('token', '', {
         httpOnly: true,
+        sameSite: 'None',  // must match cookie settings from login
+        secure: true,      // must match cookie settings from login
         expires: new Date(0),
-        path: '/'
+        path: '/',         // path must match cookie path
     });
     res.json({ message: 'Logged out' });
 });
+
 
 
 
