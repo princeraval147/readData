@@ -336,7 +336,7 @@ exports.uploadExcel = async (req, res) => {
     }
 
     try {
-        const dbPromise = db.promise(); // ✅ get a promise-compatible wrapper
+        const dbPromise = pool;
         // Get list of valid column names from the 'stocks' table
         const [columnsRows] = await dbPromise.query("SHOW COLUMNS FROM diamond_stock");
         // console.log('Columns:', columnsRows);
