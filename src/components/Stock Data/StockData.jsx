@@ -163,7 +163,6 @@ const StockData = () => {
         });
     }
 
-    // prince
     const uploadData = async () => {
         if (!Array.isArray(excelData) || excelData.length === 0) {
             alert("Invalid or empty data");
@@ -361,40 +360,19 @@ const StockData = () => {
                     party: formData.party,
                     due: formData.due,
                 };
-                // console.log("Data send to DB = ", sellPayload);
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
-            const response = API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party });
-            // console.log("Update Status Response = ", response.data);
+            await API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party });
             setRowData([]);
             resetFormData();
+            // update temprory insted fetchDiamondStock
             setStocks(prev =>
                 prev.map(stock =>
                     stock.ID === rowData.ID ? { ...stock, STATUS: newStatus, party: formData.party } : stock
                 )
             );
             alert(`Status updated to ${newStatus}.`);
-
-            // Update status either HOLD OR AVAILABLE
-            // API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party })
-            //     .then((response) => {
-            //         // console.log("Response from server:", response.data);
-            //         // alert(response.data.message);
-            //         alert(`Status updated to ${newStatus}.`);
-            //         setRowData([]);
-            //         resetFormData();
-            //         // Only Change changable line temprory insted of fetch whole fetchDiamondStock
-            //         setStocks(prev =>
-            //             prev.map(stock =>
-            //                 stock.ID === rowData.ID ? { ...stock, STATUS: newStatus, party: formData.party } : stock
-            //             )
-            //         );
-            //     })
-            //     .catch((error) => {
-            //         console.error("Error updating status:", error);
-            //         alert("Failed to update status");
-            //     });
         } catch (error) {
             console.error("Error in handleStatus:", error);
             alert("Failed to update status");

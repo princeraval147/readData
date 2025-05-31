@@ -276,24 +276,26 @@ exports.addDiamondStock = (req, res) => {
     });
 }
 
-exports.updateStock = (req, res) => {
+exports.updateStock = async (req, res) => {
     const { id } = req.params;
     const { status, party } = req.body;
+
     if (!party) {
         return res.status(400).json({ message: "Party is required." });
     }
-    // console.log("Updating diamond stock with ID:", id, "to party:", party);
     const query = "UPDATE diamond_stock SET STATUS = ?, PARTY = ? WHERE ID = ?";
-    db.query(query, [status, party, id], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Failed to update diamond stock" });
-        } else if (result.affectedRows === 0) {
-            res.status(404).json({ error: "Diamond stock not found" });
-        } else {
-            res.status(200).json({ message: "Diamond stock Hold successfully" });
+
+    try {
+        const [result] = await pool.query(query, [status, party, id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Diamond stock not found" });
         }
-    });
+        res.status(200).json({ message: "Diamond stock updated successfully" });
+    } catch (err) {
+        console.error("Update error:", err);
+        res.status(500).json({ error: "Failed to update diamond stock" });
+    }
+
 }
 
 exports.deleteSell = (req, res) => {
@@ -312,20 +314,28 @@ exports.deleteSell = (req, res) => {
     });
 }
 
-exports.addSell = (req, res) => {
+exports.addSell = async (req, res) => {
     const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due } = req.body;
-    // console.log("data = ", req.body);
-    const query = `INSERT INTO sell_data (ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, DUE) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.query(query, [id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Failed to add sell record" });
-        } else {
-            res.status(201).json({ message: "Sell record added successfully", id: result.insertId });
-        }
-    });
-}
+
+    const query = `
+        INSERT INTO sell_data (
+            ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
+            DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, DUE
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        const [result] = await pool.query(query, [
+            id, stoneid, weight, price, finalprice,
+            drate, amountRs, status, party, due
+        ]);
+
+        res.status(201).json({ message: "Sell record added successfully", id: result.insertId });
+    } catch (err) {
+        console.error("Add sell error:", err);
+        res.status(500).json({ error: "Failed to add sell record" });
+    }
+};
 
 exports.uploadExcel = async (req, res) => {
     const data = req.body;
