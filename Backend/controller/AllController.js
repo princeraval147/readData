@@ -77,118 +77,164 @@ exports.register = (req, res) => {
     });
 }
 
-exports.login = (req, res) => {
+
+exports.login = async (req, res) => {
     const { email, password } = req.body;
-    const query = 'SELECT * FROM USERS WHERE EMAIL = ? AND PASSWORD = ?';
-    // console.log('Login attempt with email:', email, ' and password:', password);
+    try {
+        // 1. Find user
+        const [users] = await db.query('SELECT * FROM users WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
 
-    db.query(query, [email, password], (err, result) => {
-        if (err) {
-            console.error('Login error:', err);
-            return res.status(500).json({ message: 'Login failed' });
-        }
-
-        // console.log('Login result:', result);
-        // Compare password (assume plain text for now — use bcrypt in real app)
-        // if (user.password !== password) {
-        //     return res.status(401).json({ message: 'Invalid email or password' });
-        // }
-        if (result.length === 0) {
+        if (users.length === 0) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
-        const user = result[0];
+
+        const user = users[0];
 
         if (!user.ISAPPROVED) {
             return res.status(403).json({ message: 'You are not approved by admin yet' });
         }
 
-        if (user.PASSWORD !== password) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+        // 2. Get token
+        const [tokenResult] = await db.query('SELECT TOKEN FROM tokens WHERE USER_ID = ? LIMIT 1', [user.ID]);
+
+        if (tokenResult.length === 0) {
+            return res.status(500).json({ message: 'Token not found' });
         }
 
-        // IF approve, Fetch existing token
-        const tokenQuery = 'SELECT TOKEN FROM tokens WHERE USER_ID = ? LIMIT 1';
-        db.query(tokenQuery, [user.ID], (err, tokenResult) => {
-            if (err || tokenResult.length === 0) {
-                return res.status(500).json({ message: 'Token not found' });
-            }
-            const token = tokenResult[0].TOKEN;
-            // console.log('Token fetched from DB:', token);
-            // ✅ Set HTTP-only cookie
-            res.cookie('token', token, {
-                httpOnly: true,
-                sameSite: 'Lax', // or 'Strict' or 'None' depending on use case
-                secure: false, // Set to true if using HTTPS
-                // secure: process.env.NODE_ENV === 'production', // use HTTPS in production
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
-            });
+        const token = tokenResult[0].TOKEN;
 
-            res.json({
-                message: 'Login successful',
-                user: {
-                    id: user.ID,
-                    email: user.EMAIL,
-                    username: user.USERNAME,
-                }
-            });
-
-            // res.json({
-            //     message: 'Login successful',
-            //     token,
-            //     user: {
-            //         id: user.ID,
-            //         email: user.EMAIL,
-            //         username: user.USERNAME,
-            // }
-            // });
+        // 3. Set cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: false, // set to true if using HTTPS
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
         });
 
-    });
+        // 4. Send response
+        res.json({
+            message: 'Login successful',
+            user: {
+                id: user.ID,
+                email: user.EMAIL,
+                username: user.USERNAME,
+            },
+        });
+
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ message: 'Login failed' });
+    }
 }
+
+
+// exports.login = (req, res) => {
+//     const { email, password } = req.body;
+//     const query = 'SELECT * FROM USERS WHERE EMAIL = ? AND PASSWORD = ?';
+
+//     db.query(query, [email, password], (err, result) => {
+//         if (err) {
+//             console.error('Login error:', err);
+//             return res.status(500).json({ message: 'Login failed' });
+//         }
+
+//         // console.log('Login result:', result);
+//         // Compare password (assume plain text for now — use bcrypt in real app)
+//         // if (user.password !== password) {
+//         //     return res.status(401).json({ message: 'Invalid email or password' });
+//         // }
+//         if (result.length === 0) {
+//             return res.status(401).json({ message: 'Invalid email or password' });
+//         }
+//         const user = result[0];
+
+//         if (!user.ISAPPROVED) {
+//             return res.status(403).json({ message: 'You are not approved by admin yet' });
+//         }
+
+//         if (user.PASSWORD !== password) {
+//             return res.status(401).json({ message: 'Invalid email or password' });
+//         }
+
+//         // IF approve, Fetch existing token
+//         const tokenQuery = 'SELECT TOKEN FROM tokens WHERE USER_ID = ? LIMIT 1';
+//         db.query(tokenQuery, [user.ID], (err, tokenResult) => {
+//             if (err || tokenResult.length === 0) {
+//                 return res.status(500).json({ message: 'Token not found' });
+//             }
+//             const token = tokenResult[0].TOKEN;
+//             // console.log('Token fetched from DB:', token);
+//             // ✅ Set HTTP-only cookie
+//             res.cookie('token', token, {
+//                 httpOnly: true,
+//                 sameSite: 'Lax', // or 'Strict' or 'None' depending on use case
+//                 secure: false, // Set to true if using HTTPS
+//                 // secure: process.env.NODE_ENV === 'production', // use HTTPS in production
+//                 maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
+//             });
+
+//             res.json({
+//                 message: 'Login successful',
+//                 user: {
+//                     id: user.ID,
+//                     email: user.EMAIL,
+//                     username: user.USERNAME,
+//                 }
+//             });
+
+//             // res.json({
+//             //     message: 'Login successful',
+//             //     token,
+//             //     user: {
+//             //         id: user.ID,
+//             //         email: user.EMAIL,
+//             //         username: user.USERNAME,
+//             // }
+//             // });
+//         });
+
+//     });
+// }
 
 // GLobarl
-exports.getShape = (req, res) => {
-    db.query("SELECT * FROM SHAPE ORDER BY SID", (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Faild to fetch Shape" });
-        } else {
-            res.status(200).json(result);
-        }
-    });
+exports.getShape = async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM SHAPE ORDER BY SID");
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("DB error : ", error);
+        res.status(500).json({ error: "Faild to fetch Shape" });
+    }
 }
 
-exports.getCut = (req, res) => {
-    db.query("SELECT * FROM CUT ORDER BY CID", (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Faild to fetch Cut" });
-        } else {
-            res.status(200).json(result);
-        }
-    });
+exports.getCut = async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM CUT ORDER BY CID");
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("DB error : ", error);
+        res.status(500).json({ error: "Faild to fetch Cut " });
+    }
 }
 
-exports.getColor = (req, res) => {
-    db.query("SELECT * FROM color ORDER BY CID", (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Faild to fetch Color" });
-        } else {
-            res.status(200).json(result);
-        }
-    });
+exports.getColor = async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM color ORDER BY CID");
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("DB error : ", error);
+        res.status(500).json({ error: "Failed to fetch color" });
+    }
 }
 
-exports.getClarity = (req, res) => {
-    db.query("SELECT * FROM clarity ORDER BY CID", (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Faild to fetch Clarity" });
-        } else {
-            res.status(200).json(result);
-        }
-    });
+exports.getClarity = async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT * FROM clarity ORDER BY CID");
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("DB error : ", error);
+        res.status(500).json({ error: "Failed to fetch clarity" });
+    }
 }
 
 exports.getFL = (req, res) => {
