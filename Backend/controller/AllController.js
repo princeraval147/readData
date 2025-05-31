@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const pool = require('../config/pool');
 require('dotenv').config();
 
 const transporter = require('../config/mailer');
@@ -82,7 +83,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
         // 1. Find user
-        const [users] = await db.query('SELECT * FROM USERS WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
+        const [users] = await pool.query('SELECT * FROM USERS WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
 
         if (users.length === 0) {
             return res.status(401).json({ message: 'Invalid email or password' });
@@ -95,7 +96,7 @@ exports.login = async (req, res) => {
         }
 
         // 2. Get token
-        const [tokenResult] = await db.query('SELECT TOKEN FROM tokens WHERE USER_ID = ? LIMIT 1', [user.ID]);
+        const [tokenResult] = await pool.query('SELECT TOKEN FROM tokens WHERE USER_ID = ? LIMIT 1', [user.ID]);
 
         if (tokenResult.length === 0) {
             return res.status(500).json({ message: 'Token not found' });
@@ -206,7 +207,7 @@ exports.login = async (req, res) => {
 // GLobarl
 exports.getShape = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM SHAPE ORDER BY SID");
+        const [rows] = await pool.query("SELECT * FROM SHAPE ORDER BY SID");
         res.status(200).json(rows);
     } catch (error) {
         console.error("DB error : ", error);
@@ -216,7 +217,7 @@ exports.getShape = async (req, res) => {
 
 exports.getCut = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM CUT ORDER BY CID");
+        const [rows] = await pool.query("SELECT * FROM CUT ORDER BY CID");
         res.status(200).json(rows);
     } catch (error) {
         console.error("DB error : ", error);
@@ -226,7 +227,7 @@ exports.getCut = async (req, res) => {
 
 exports.getColor = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM color ORDER BY CID");
+        const [rows] = await pool.query("SELECT * FROM color ORDER BY CID");
         res.status(200).json(rows);
     } catch (error) {
         console.error("DB error : ", error);
@@ -236,7 +237,7 @@ exports.getColor = async (req, res) => {
 
 exports.getClarity = async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM clarity ORDER BY CID");
+        const [rows] = await pool.query("SELECT * FROM clarity ORDER BY CID");
         res.status(200).json(rows);
     } catch (error) {
         console.error("DB error : ", error);
