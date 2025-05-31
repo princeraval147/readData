@@ -4,6 +4,7 @@ function authenticateToken(req, res, next) {
     // const authHeader = req.headers['authorization'];
     // const token = authHeader && authHeader.split(' ')[1];
     const token = req.cookies.token; // <-- 🔁 Changed from headers to cookies
+    console.log("TOken = ", token);
 
     if (!token) {
         return res.status(401).json({ message: 'Token missing' });

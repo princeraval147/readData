@@ -1,5 +1,150 @@
 const db = require('../config/db');
+require('dotenv').config();
 
+const transporter = require('../config/mailer');
+const generateToken = require('../utils/generateToken');
+const token = generateToken(16);
+
+// user
+exports.register = (req, res) => {
+    const { username, email, password } = req.body;
+
+    // Step 1: Check if email already exists
+    const checkQuery = 'SELECT * FROM USERS WHERE EMAIL = ?';
+    db.query(checkQuery, [email], (err, results) => {
+        if (err) {
+            console.error('Email check error:', err);
+            return res.status(500).json({ message: 'Server error during registration' });
+        }
+
+        if (results.length > 0) {
+            return res.status(409).json({ message: 'Email already exists' });
+        }
+
+        // Step 2: Insert user if email not found
+        const insertQuery = 'INSERT INTO USERS (USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?)';
+        db.query(insertQuery, [username, email, password], (err, result) => {
+            if (err) {
+                console.error('Registration error:', err);
+                return res.status(500).json({ message: 'Registration failed' });
+            }
+
+            const userId = result.insertId;
+
+            // Step 3: Store token for new user
+            const insertTokenQuery = 'INSERT INTO tokens (USER_ID, TOKEN) VALUES (?, ?)';
+            db.query(insertTokenQuery, [userId, token], (err) => {
+                if (err) {
+                    console.error('Token storage error:', err);
+                    return res.status(500).json({ message: 'Token generation failed' });
+                }
+
+                const mailOptions = {
+                    from: process.env.MAIL_USER,
+                    to: 'mahesh.lex@gmail.com',
+                    subject: 'New User Registration - Approval Needed',
+                    html: `
+                    <p><strong>New user registered on the platform.</strong></p>
+                    <ul>
+                        <li><strong>Username:</strong> ${username}</li>
+                        <li><strong>Email:</strong> ${email}</li>
+                    </ul>
+                    <p>Please approve this user from Database.</p>
+                `
+
+                };
+                transporter.sendMail(mailOptions, (err, info) => {
+                    if (err) {
+                        console.error('Error sending email:', err);
+                        // Optional: You can delete user + token here if you want a clean rollback
+                    } else {
+                        console.log('Approval email sent:', info.response);
+                    }
+                });
+
+                // Step 4: Respond with token and basic user info
+                res.status(201).json({
+                    message: 'User registered successfully',
+                    token,
+                    user: {
+                        id: userId,
+                        email,
+                        username
+                    }
+                });
+            });
+        });
+    });
+}
+
+exports.login = (req, res) => {
+    const { email, password } = req.body;
+    const query = 'SELECT * FROM USERS WHERE EMAIL = ? AND PASSWORD = ?';
+    // console.log('Login attempt with email:', email, ' and password:', password);
+
+    db.query(query, [email, password], (err, result) => {
+        if (err) {
+            console.error('Login error:', err);
+            return res.status(500).json({ message: 'Login failed' });
+        }
+
+        // console.log('Login result:', result);
+        // Compare password (assume plain text for now — use bcrypt in real app)
+        // if (user.password !== password) {
+        //     return res.status(401).json({ message: 'Invalid email or password' });
+        // }
+        if (result.length === 0) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+        const user = result[0];
+
+        if (!user.ISAPPROVED) {
+            return res.status(403).json({ message: 'You are not approved by admin yet' });
+        }
+
+        if (user.PASSWORD !== password) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        // IF approve, Fetch existing token
+        const tokenQuery = 'SELECT TOKEN FROM tokens WHERE USER_ID = ? LIMIT 1';
+        db.query(tokenQuery, [user.ID], (err, tokenResult) => {
+            if (err || tokenResult.length === 0) {
+                return res.status(500).json({ message: 'Token not found' });
+            }
+            const token = tokenResult[0].TOKEN;
+            // console.log('Token fetched from DB:', token);
+            // ✅ Set HTTP-only cookie
+            res.cookie('token', token, {
+                httpOnly: true,
+                sameSite: 'Lax', // or 'Strict' or 'None' depending on use case
+                secure: false, // Set to true if using HTTPS
+                // secure: process.env.NODE_ENV === 'production', // use HTTPS in production
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
+            });
+
+            res.json({
+                message: 'Login successful',
+                user: {
+                    id: user.ID,
+                    email: user.EMAIL,
+                    username: user.USERNAME,
+                }
+            });
+
+            // res.json({
+            //     message: 'Login successful',
+            //     token,
+            //     user: {
+            //         id: user.ID,
+            //         email: user.EMAIL,
+            //         username: user.USERNAME,
+            // }
+            // });
+        });
+
+    });
+}
 
 // GLobarl
 exports.getShape = (req, res) => {
@@ -83,7 +228,7 @@ exports.updateStock = (req, res) => {
     if (!party) {
         return res.status(400).json({ message: "Party is required." });
     }
-    console.log("Updating diamond stock with ID:", id, "to party:", party);
+    // console.log("Updating diamond stock with ID:", id, "to party:", party);
     const query = "UPDATE diamond_stock SET STATUS = ?, PARTY = ? WHERE ID = ?";
     db.query(query, [status, party, id], (err, result) => {
         if (err) {
@@ -99,7 +244,7 @@ exports.updateStock = (req, res) => {
 
 exports.deleteSell = (req, res) => {
     const { id } = req.params;
-    console.log("Deleting diamond stock with ID:", id);
+    // console.log("Deleting diamond stock with ID:", id);
     const query = `DELETE FROM diamond_stock WHERE ID = ?`;
     db.query(query, [id], (err, result) => {
         if (err) {
@@ -115,7 +260,7 @@ exports.deleteSell = (req, res) => {
 
 exports.addSell = (req, res) => {
     const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due } = req.body;
-    console.log("data = ", req.body);
+    // console.log("data = ", req.body);
     const query = `INSERT INTO sell_data (ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, DUE) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     db.query(query, [id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due], (err, result) => {
@@ -218,7 +363,7 @@ exports.uploadExcel = async (req, res) => {
 
 exports.getDiamondStock = (req, res) => {
     const userId = req.user.id;
-    const query = 'SELECT * FROM DIAMOND_STOCK WHERE USER_ID = ?';
+    const query = 'SELECT * FROM DIAMOND_STOCK WHERE USER_ID = ? ORDER BY ID';
     db.query(query, [userId], (err, results) => {
         if (err) {
             console.error('Error fetching data:', err);
@@ -226,4 +371,45 @@ exports.getDiamondStock = (req, res) => {
         }
         res.json(results);
     });
+}
+
+// Share API
+const ApiShareData = require('../models/apiShareData');
+const ShareAPI = require('../config/shareAPIEmail');
+exports.shareApi = async (req, res) => {
+    const { name, email } = req.body;
+    const token = req.cookies.token;
+    const userId = req.user.id;
+
+
+    if (!email || !name) return res.status(400).json({ message: 'Email and name are required' });
+    if (!token) return res.status(401).json({ message: 'Authentication token missing' });
+
+    try {
+        // ShareAPI({ name, email, token });    // send mail
+        res.json({ message: 'Email sent successfully!' });
+
+        // Store in DB api_shares table 
+        await ApiShareData.createShare({
+            userId: userId,
+            recipientEmail: email,
+            Name: name
+        });
+
+    } catch (error) {
+        console.error('Error sending email:', error.message);
+        res.status(500).json({ message: 'Failed to send email' });
+    }
+}
+
+exports.SharedAPI = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const [rows] = await ApiShareData.getSharedAPI(userId);
+        // console.log(rows);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching share history:', err.message);
+        res.status(500).json({ message: 'Could not fetch history' });
+    }
 }
