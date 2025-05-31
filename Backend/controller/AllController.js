@@ -358,14 +358,14 @@ exports.uploadExcel = async (req, res) => {
             if (Object.keys(filteredStock).length === 0) continue;
 
             // Delete old entry
-            await dbPromise.query(`DELETE FROM DIAMOND_STOCK WHERE STOCKID = ?`, [STOCKID]);
+            await dbPromise.query(`DELETE FROM diamond_stock WHERE STOCKID = ?`, [STOCKID]);
 
             // Insert new entry
             // await dbPromise.query(`INSERT INTO DIAMOND_STOCK SET ?`, [filteredStock]);
         }
 
         const insertQuery = `
-        INSERT INTO DIAMOND_STOCK (
+        INSERT INTO diamond_stock (
             USER_ID, KAPAN, PACKET, TAG, STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, 
             FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO,
             CITY, STATE, COUNTRY, TREATMENT, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, 
@@ -417,7 +417,7 @@ exports.uploadExcel = async (req, res) => {
 
 exports.getDiamondStock = async (req, res) => {
     const userId = req.user.id;
-    const query = 'SELECT * FROM DIAMOND_STOCK WHERE USER_ID = ? ORDER BY ID';
+    const query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
     try {
         const [results] = await pool.query(query, [userId]);
         res.json(results);
