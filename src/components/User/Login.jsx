@@ -30,7 +30,6 @@ const Login = () => {
     // Handle Signup Submission
     const handleSignupSubmit = async (e) => {
         e.preventDefault();
-        console.log("Signup Data:", signupData);
         try {
             const response = await API.post("/auth/register", signupData);
             const data = response.data;

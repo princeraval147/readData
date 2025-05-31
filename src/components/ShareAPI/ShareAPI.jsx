@@ -35,7 +35,7 @@ const ShareAPI = () => {
         setLoading(true);
         try {
             const response = await API.post("/share-api", formData, { withCredentials: true });
-            console.log(response.data);
+            // console.log(response.data);
             setStatus(response.data.message || 'Email sent successfully!');
             setFormData({
                 name: "",
@@ -47,7 +47,7 @@ const ShareAPI = () => {
         } finally {
             setLoading(false);
         }
-        console.log("FormData = ", formData);
+        // console.log("FormData = ", formData);
     };
 
     const [apiData, setAPIData] = useState([]);
@@ -67,8 +67,6 @@ const ShareAPI = () => {
     useEffect(() => {
         fetchAPIHistory();
     }, []);
-
-    console.log(apiData);
 
 
 

@@ -300,7 +300,7 @@ const StockData = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Form Data Submitted: ", formData);
+        // console.log("Form Data Submitted: ", formData);s
         try {
             API.post('/add-diamondstock', formData, { withCredentials: true })
                 .then((response) => {
@@ -361,12 +361,12 @@ const StockData = () => {
                     party: formData.party,
                     due: formData.due,
                 };
-                console.log("Data send to DB = ", sellPayload);
+                // console.log("Data send to DB = ", sellPayload);
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
             const response = API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party });
-            console.log("Update Status Response = ", response.data);
+            // console.log("Update Status Response = ", response.data);
             setRowData([]);
             resetFormData();
             setStocks(prev =>

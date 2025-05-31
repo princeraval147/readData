@@ -77,7 +77,7 @@ const ReadExcleData = () => {
 
     const uploadData = async () => {
         const sendToDB = convertToObjects(data);
-        console.log("Data to be sent to DB: ", sendToDB[0]);
+        // console.log("Data to be sent to DB: ", sendToDB[0]);
         try {
             const res = await Axios.post('http://localhost:5000/api/upload-excel', sendToDB);
             alert(res.data.message);
