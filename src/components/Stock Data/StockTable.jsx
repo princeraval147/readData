@@ -1,17 +1,39 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Paper, Pagination, Box, CircularProgress
+    TableHead, TableRow, Paper, Pagination, Box
 } from '@mui/material';
 
 
-const StockTable = React.memo(({ stocks, onRowClick }) => {
-    const [loading, setLoading] = useState(false); // Show loader if needed (can be controlled externally)
+const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false }) => {
+
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 50;
 
-    // Headers based on first item keys
-    const headers = stocks.length > 0 ? Object.keys(stocks[0]) : [];
+    const headersToShow = [
+        "ID", "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT",
+        "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
+        "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN",
+        "LAB", "CERTIFICATE_COMMENT", "CITY", "STATE", "COUNTRY",
+        "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
+        "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DOLLAR_RATE", "RS_AMOUNT", "DISCOUNT", "FINAL_PRICE",
+        "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
+        "BGM", "NO_BGM", "CERTIFICATE_NUMBER", "PARTY", "DUE"
+    ];
+
+    const allHeaders = stocks.length > 0 ? Object.keys(stocks[0]) : [];
+    const headers = showAllColumns ? allHeaders : allHeaders.filter(h => headersToShow.includes(h));
+
+    // const headers = stocks.length > 0 ? Object.keys(stocks[0]) : [];
+    // Try This for UX
+    // const displayHeaders = [
+    //     { label: "Price Per Carat", key: "price" },
+    //     { label: "Final Price", key: "finalprice" },
+    // ];
+    // displayHeaders.map(({ label, key }) => (
+    //     <TableCell key={key}>{row[key]}</TableCell>
+    // ));
+
 
     // Pagination calculations
     const totalPages = Math.ceil(stocks.length / rowsPerPage);
@@ -26,64 +48,84 @@ const StockTable = React.memo(({ stocks, onRowClick }) => {
         setCurrentPage(value);
     };
 
+    useEffect(() => {
+        if (stocks.length > 0) {
+            const missingHeaders = headersToShow.filter(h => !Object.keys(stocks[0]).includes(h));
+            if (missingHeaders.length > 0) {
+                console.warn("Missing headers in data:", missingHeaders);
+            }
+        }
+    }, [stocks]);
+
+
+
+
+
+
     return (
         <>
             {/* <TableContainer component={Paper} sx={{ maxHeight: 480, overflow: 'auto' }}> */}
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow
-                            sx={{
-                                position: 'sticky',
-                                top: 0,
-                                background: '#f0f0f0',
-                                zIndex: 1
-                            }}>
-                            {headers.map((header, i) => (
-                                <TableCell
-                                    key={i}
-                                    sx={{
-                                        backgroundColor: '#f0f0f0',
-                                        fontWeight: 'bold',
-                                    }}
-                                >
-                                    {header}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {paginatedData.map((row, rowIndex) => (
-                            <TableRow
-                                key={rowIndex}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => onRowClick(row)}
-                            >
-                                {headers.map((header, colIndex) => (
-                                    <TableCell key={colIndex}>
-                                        {row[header]}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            {
+                stocks.length !== 0 &&
+                (
+                    <>
+                        <TableContainer component={Paper}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow
+                                        sx={{
+                                            position: 'sticky',
+                                            top: 0,
+                                            background: '#f0f0f0',
+                                            zIndex: 1
+                                        }}>
+                                        {headers.map((header, i) => (
+                                            <TableCell
+                                                key={i}
+                                                sx={{
+                                                    backgroundColor: '#f0f0f0',
+                                                    fontWeight: 'bold',
+                                                }}
+                                            >
+                                                {header}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {paginatedData.map((row, rowIndex) => (
+                                        <TableRow
+                                            key={rowIndex}
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => onRowClick(row)}
+                                        >
+                                            {headers.map((header, colIndex) => (
+                                                <TableCell key={colIndex}>
+                                                    {/* {row[header]} */}
+                                                    {row[header] ?? "-"}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
 
-            {/* Pagination */}
-            {stocks.length !== 0 && (
-                <Box display="flex" justifyContent="center" mt={1}>
-                    <Pagination
-                        count={totalPages}
-                        page={currentPage}
-                        onChange={handleChangePage}
-                        color="primary"
-                        size="large"
-                        siblingCount={1}
-                        boundaryCount={1}
-                    />
-                </Box>
-            )}
+                        {/* Pagination */}
+                        <Box display="flex" justifyContent="center" mt={1}>
+                            <Pagination
+                                count={totalPages}
+                                page={currentPage}
+                                onChange={handleChangePage}
+                                color="primary"
+                                size="large"
+                                siblingCount={1}
+                                boundaryCount={1}
+                            />
+                        </Box>
+                    </>
+                )
+            }
         </>
     );
 });

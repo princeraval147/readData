@@ -16,7 +16,7 @@
 }
 
 .inputTable thead tr td input {
-    width: 70px;
+    width: 100px;
     padding: 0.5rem;
     border-radius: 6px;
     border: 1px solid #ccc;
@@ -26,14 +26,14 @@
 .inputTable thead tr td input[name="lot"],
 .inputTable thead tr td input[name="due"],
 .inputTable thead tr td input[name="tag"] {
-    width: 40px;
+    width: 50px;
 }
 
 .inputTable td input[name="kapan"],
 .inputTable td input[name="length"],
 .inputTable td input[name="width"],
 .inputTable td input[name="weight"] {
-    width: 50px;
+    width: 70px;
 }
 
 .inputTable td input[name="barcode"] {
@@ -51,4 +51,56 @@
     border-radius: 6px;
     border: 1px solid #ccc;
     font-size: 0.9rem;
+}
+
+/* -------------------------        New Design       --------------------------- */
+/* .inputForm {
+    overflow-x: auto;
+}
+
+.inputTable {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1200px;
+}
+
+.inputTable th,
+.inputTable td {
+    border: 1px solid #ddd;
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.inputTable input,
+.inputTable select {
+    width: 100%;
+    padding: 4px 6px;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+}
+
+*/
+
+.inputTable {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1400px;
+}
+
+.inputTable th,
+.inputTable td {
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.inputTable input,
+.inputTable select {
+    width: 100%;
+    font-size: 0.85rem;
+    box-sizing: border-box;
 }
