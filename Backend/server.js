@@ -56,15 +56,13 @@ app.use(cookieParser());
 app.use(allRoutes);
 
 //  can't stop server
-app.get('/', (req, res, next) => {
-    throw new Error('BROKEN');
-});
+// app.get('/', (req, res, next) => {
+//     throw new Error('BROKEN');
+// });
 app.use((err, req, res, next) => {
     console.log("got error");
     console.error(err.stack);
-
-    // replace this with whatever UI you want to show the user
-    res.status(500).send('Something broke!');
+    res.status(500).send('Backend Server not response!');
 });
 
 
