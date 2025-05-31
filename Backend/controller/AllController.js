@@ -415,16 +415,16 @@ exports.uploadExcel = async (req, res) => {
     }
 }
 
-exports.getDiamondStock = (req, res) => {
+exports.getDiamondStock = async (req, res) => {
     const userId = req.user.id;
     const query = 'SELECT * FROM DIAMOND_STOCK WHERE USER_ID = ? ORDER BY ID';
-    db.query(query, [userId], (err, results) => {
-        if (err) {
-            console.error('Error fetching data:', err);
-            return res.status(500).json({ message: 'Error fetching data' });
-        }
+    try {
+        const [results] = await pool.query(query, [userId]);
         res.json(results);
-    });
+    } catch (err) {
+        console.error('Error fetching data:', err);
+        res.status(500).json({ message: 'Error fetching data' });
+    }
 }
 
 // Share API
