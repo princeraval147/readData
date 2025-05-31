@@ -1,24 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, useTransition } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom';
 import Axios from 'axios';
-import {
-    Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Paper, Pagination, Box,
-    Typography
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import CircularProgress from '@mui/material/CircularProgress';
 import styles from './StockData.module.css';
-import { trTR } from '@mui/material/locale';
-import Slider from '@mui/material/Slider';
-import { Select, MenuItem, FormControl, InputLabel, Button, TextField } from '@mui/material';
-// import debounce from 'lodash.debounce';
 import StockTable from './StockTable';
-import { Stack } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
+import Slider from '@mui/material/Slider';
+import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, TextField, Stack } from '@mui/material';
 import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart, CheckCircle } from '@mui/icons-material';
-
+import API from '../../API';
 
 const StockData = () => {
 
@@ -41,7 +32,7 @@ const StockData = () => {
         setError(null); // reset previous error
 
         try {
-            const response = await Axios.get('http://localhost:5000/api/get-diamondstock', {
+            const response = await API.get("/get-diamondstock", {
                 withCredentials: true, // ✅ Sends cookies
             });
             const data = response.data;
@@ -63,48 +54,29 @@ const StockData = () => {
         }
     }
 
+    // prince
+    // const handleImportExcel = (e) => {
+    //     setLoading(true);
+    //     const file = e.target.files[0];
+    //     const reader = new FileReader();
 
-    // Loading
-    // if (stocks.length === 0) return <div className={styles.loadingOverlay}>
-    //     <CircularProgress size={60} color="primary" />
-    // </div>
+    //     reader.onload = (evt) => {
+    //         const data = new Uint8Array(evt.target.result);
+    //         const workbook = XLSX.read(data, { type: 'array' });
+    //         const firstSheetName = workbook.SheetNames[0];
+    //         const worksheet = workbook.Sheets[firstSheetName];
+    //         const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    //         setLoading(false);
+    //         setError(null);
+    //         setStocks(jsonData); // Replace existing data
+    //     };
 
-    const handleImportExcel = (e) => {
-        setLoading(true);
-        const file = e.target.files[0];
-        const reader = new FileReader();
+    //     if (file) reader.readAsArrayBuffer(file);
+    // };
 
-        reader.onload = (evt) => {
-            const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-            setLoading(false);
-            setError(null);
-            setStocks(jsonData); // Replace existing data
-        };
+    // handle excel data 
+    const [excelData, setExcelData] = useState([]);
 
-        if (file) reader.readAsArrayBuffer(file);
-    };
-
-    // export to excel
-    const exportToExcel = () => {
-        const worksheet = XLSX.utils.json_to_sheet(stocks);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-
-        const excelBuffer = XLSX.write(workbook, {
-            bookType: "xlsx",
-            type: "array",
-        });
-
-        const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "diamond_stock.xlsx");
-    };
-
-
-    // Send to DB
     const headerMapping = {
         'STOCK_': 'STOCK',
         'REPORT_': 'REPORT_NO',
@@ -138,7 +110,43 @@ const StockData = () => {
         'DOCUMENT_NO': 'CERTIFICATE_NUMBER',
     };
 
+    const handleImportExcel = (e) => {
+        setLoading(true);
+        const file = e.target.files[0];
+        const reader = new FileReader();
 
+        reader.onload = (evt) => {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            setLoading(false);
+            setError(null);
+            setExcelData(jsonData); // ✅ Store in separate state
+        };
+
+        if (file) reader.readAsArrayBuffer(file);
+    };
+
+
+    // export to excel
+    const exportToExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(stocks);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+
+        const excelBuffer = XLSX.write(workbook, {
+            bookType: "xlsx",
+            type: "array",
+        });
+
+        const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+        saveAs(data, "diamond_stock.xlsx");
+    };
+
+    // Send to DB
     function normalizeObjectKeys(data) {
         return data.map(obj => {
             const normalized = {};
@@ -157,17 +165,18 @@ const StockData = () => {
 
     // prince
     const uploadData = async () => {
-        if (!Array.isArray(stocks) || stocks.length === 0) {
+        if (!Array.isArray(excelData) || excelData.length === 0) {
             alert("Invalid or empty data");
             return;
         }
-        // console.log("Data to be sent to DB: ", stocks[0]);
-        const sendToDB = normalizeObjectKeys(stocks);
+        // console.log("Data to be sent to DB: ", excelData[0]);
+        const sendToDB = normalizeObjectKeys(excelData);
         setLoading(true); // Start loading
         try {
-            const res = await Axios.post('http://localhost:5000/api/upload-excel', sendToDB, { withCredentials: true });
-            fetchDiamondStock();
+            const res = await API.post('/upload-excel', sendToDB, { withCredentials: true });
             alert(res.data.message);
+            setExcelData([]);
+            setStocks([]);
         } catch (error) {
             console.error("Internal Error:", error);
             alert("Upload failed");
@@ -193,7 +202,7 @@ const StockData = () => {
                 // "fl"
             ];
             const [shapeRes, colorRes, clarityRes, cutRes] = await Promise.all(
-                endpoints.map(endpoint => Axios.get(`http://localhost:5000/api/${endpoint}`))
+                endpoints.map(endpoint => API.get(`/${endpoint}`))
             );
             setShapeData(shapeRes.data);
             setColorData(colorRes.data);
@@ -292,13 +301,16 @@ const StockData = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         console.log("Form Data Submitted: ", formData);
-        resetFormData();
         try {
-            Axios.post('http://localhost:5000/api/add-diamondstock', formData, { withCredentials: true })
+            API.post('/add-diamondstock', formData, { withCredentials: true })
                 .then((response) => {
                     // console.log("Response from server:", response.data);
                     alert(response.data.message);
-                    fetchDiamondStock(); // Refresh the stock data
+                    resetFilter();  // reset search filter also call fetchDiamondStock
+                    resetFormData();
+                    setTimeout(() => {
+                        barcoderef.current.focus();
+                    }, 100);
                 })
                 .catch((error) => {
                     console.error("Error submitting form:", error);
@@ -307,18 +319,14 @@ const StockData = () => {
         } catch (error) {
             console.error("Error in handleSubmit:", error);
         }
-        setTimeout(() => {
-            barcoderef.current.focus();
-        }, 100);
+
     }
 
     const [rowData, setRowData] = useState([]);
-    console.log("Status = ", rowData.STATUS)
+
     const handleStatus = async () => {
         const isHolding = rowData.STATUS === 'HOLD';
         const newStatus = isHolding ? 'AVAILABLE' : 'HOLD';
-        console.log("Is holding = ", isHolding);
-        console.log("New Status = ", newStatus);
         // required
         if (!isHolding) {
             const requiredFields = [
@@ -354,28 +362,39 @@ const StockData = () => {
                     due: formData.due,
                 };
                 console.log("Data send to DB = ", sellPayload);
-                await Axios.post('http://localhost:5000/api/add-sell', sellPayload, { withCredentials: true });
+                await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
-            // Update status either way
-            Axios.put(`http://localhost:5000/api/update-status/${rowData.ID}`, { status: newStatus, party: formData.party })
-                .then((response) => {
-                    // console.log("Response from server:", response.data);
-                    // alert(response.data.message);
-                    alert(`Status updated to ${newStatus}.`);
-                    setRowData([]);
-                    resetFormData();
-                    setStocks(prev =>
-                        prev.map(stock =>
-                            stock.ID === rowData.ID ? { ...stock, STATUS: newStatus, party: formData.party } : stock
-                        )
-                    );
-                })
-                .catch((error) => {
-                    console.error("Error updating status:", error);
-                    alert("Failed to update status");
-                });
+            const response = API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party });
+            console.log("Update Status Response = ", response.data);
+            setRowData([]);
+            resetFormData();
+            setStocks(prev =>
+                prev.map(stock =>
+                    stock.ID === rowData.ID ? { ...stock, STATUS: newStatus, party: formData.party } : stock
+                )
+            );
+            alert(`Status updated to ${newStatus}.`);
 
+            // Update status either HOLD OR AVAILABLE
+            // API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party })
+            //     .then((response) => {
+            //         // console.log("Response from server:", response.data);
+            //         // alert(response.data.message);
+            //         alert(`Status updated to ${newStatus}.`);
+            //         setRowData([]);
+            //         resetFormData();
+            //         // Only Change changable line temprory insted of fetch whole fetchDiamondStock
+            //         setStocks(prev =>
+            //             prev.map(stock =>
+            //                 stock.ID === rowData.ID ? { ...stock, STATUS: newStatus, party: formData.party } : stock
+            //             )
+            //         );
+            //     })
+            //     .catch((error) => {
+            //         console.error("Error updating status:", error);
+            //         alert("Failed to update status");
+            //     });
         } catch (error) {
             console.error("Error in handleStatus:", error);
             alert("Failed to update status");
@@ -384,45 +403,20 @@ const StockData = () => {
 
     const handleSell = async () => {
         // required
-        const { party, price, finalprice, drate, amountRs } = formData;
-        if (!party || party.trim() === '') {
-            alert("Please enter a Party.");
-            setTimeout(() => {
-                partyRef?.current.focus();
-            }, 100);
-            return;
-        }
+        const requiredFields = [
+            { field: 'party', ref: partyRef, label: 'Party' },
+            { field: 'price', ref: priceRef, label: 'Price' },
+            { field: 'finalprice', ref: finalPriceRef, label: 'Final Price' },
+            { field: 'drate', ref: drateRef, label: 'Dollar Rate' },
+            { field: 'amountRs', ref: amountRsRef, label: 'Amount Rs' },
+        ];
 
-        if (!price) {
-            alert("Please enter Price.");
-            setTimeout(() => {
-                priceRef?.current.focus();
-            }, 100);
-            return;
-        }
-
-        if (!finalprice) {
-            alert("Please enter Final Price.");
-            setTimeout(() => {
-                finalPriceRef?.current.focus();
-            }, 100);
-            return;
-        }
-
-        if (!drate) {
-            alert("Please enter Dollar Rate.");
-            setTimeout(() => {
-                drateRef?.current.focus();
-            }, 100);
-            return;
-        }
-
-        if (!amountRs) {
-            alert("Please enter Amount Rs.");
-            setTimeout(() => {
-                amountRsRef?.current.focus();
-            }, 100);
-            return;
+        for (const { field, ref, label } of requiredFields) {
+            if (!formData[field]) {
+                alert(`Please enter ${label}.`);
+                setTimeout(() => ref?.current?.focus(), 100);
+                return;
+            }
         }
 
         try {
@@ -439,23 +433,14 @@ const StockData = () => {
                 party: formData.party,
                 due: formData.due,
             };
-            await Axios.post(
-                'http://localhost:5000/api/add-sell', // Your API route to insert
-                sellPayload,
-                { withCredentials: true }
-            );
+            await API.post('/add-sell', sellPayload, { withCredentials: true });
+            const response = await API.delete(`/delete-stock/${rowData.ID}`);
 
-            Axios.delete(`http://localhost:5000/api/delete-stock/${rowData.ID}`)
-                .then((response) => {
-                    alert(response.data.message);
-                    setRowData([]);
-                    resetFormData();
-                    fetchDiamondStock(); // Refresh the stock data
-                })
-                .catch((error) => {
-                    console.error("Error deleting stock:", error);
-                    alert("Failed to delete stock");
-                });
+            alert(response.data.message);
+            setRowData([]);
+            resetFormData();
+            fetchDiamondStock();
+
         } catch (error) {
             console.error("Error in handleSell:", error);
             alert("Failed to sell diamond / Delete stock");
@@ -480,19 +465,28 @@ const StockData = () => {
             sym: row.SYMMETRY || 'EX',
             length: row.LENGTH || '',
             width: row.WIDTH || '',
+            drate: row.DOLLAR_RATE || '',
             price: row.PRICE_PER_CARAT || '',
             finalprice: row.FINAL_PRICE || '',
             party: row.PARTY || '',
             due: row.DUE || ''
         });
     }, []);
+
+
+
     // Search Filter
     const shapeMap = {
-        rd: "ROUND",
-        round: "ROUND",
-        pr: "PRINCESS",
-        princess: "princess",
-        // add other shapes here...
+        RD: "ROUND",
+        "PR": "PEAR",
+        PN: "PRINCESS",
+        CU: "CUSHION",
+        EM: "EMERALD",
+        MQ: "MARQUISE",
+        HT: "HEART",
+        OV: "OVAL",
+        RAD: "RADIANT",
+        TRE: "TRILLIANT",
     };
     const [filters, setFilters] = useState({
         shape: '',
@@ -503,17 +497,31 @@ const StockData = () => {
     const [weightMax, setWeightMax] = useState(25);
     const [weightRange, setWeightRange] = useState([0, 25]);
     const [filteredData, setFilteredData] = useState([]); // Store filtered results
+    const normalizeShape = (shape) => {
+        const cleaned = shape?.toUpperCase().trim();
+        const map = {
+            RD: "RD", ROUND: "RD", round: "RD",
+            PR: "PR", PEAR: "PR", pear: "PR",
+            PN: "PN", PRINCESS: "PN", princess: "PN",
+            CU: "CU", CUSHION: "CU", cushion: "CU",
+            EM: "EM", EMERALD: "EM", emerald: "EM",
+            MQ: "MQ", MARQUISE: "MQ", marquise: "MQ",
+            HT: "HT", HEART: "HT", heart: "HT",
+            OV: "OV", OVAL: "OV", oval: "OV",
+            RAD: "RAD", RADIANT: "RAD", radiant: "RAD",
+            TRE: "TRE", TRILLIANT: "TRE", trilliant: "TRE",
+        };
+        return map[cleaned] || cleaned;
+    };
+
 
     const handleSearch = () => {
+        setError(null);
         // const min = parseFloat(filters.weightMin) || 0;
         // const max = parseFloat(filters.weightMax) || 25;
         const min = weightMin;
         const max = weightMax;
         const normalize = str => str?.toLowerCase().replace(/\s+/g, '') || '';  // Reomve space (eg: VS 1 - VS1)
-        const getShapeKey = (str) => {
-            const norm = normalize(str);
-            return shapeMap[norm] || norm; // fallback to normalized if no mapping found
-        };
 
         const result = stocks.filter((stock) => {
             const rawWeight = stock.WEIGHT?.toString().replace(',', '.').trim();
@@ -521,14 +529,38 @@ const StockData = () => {
             const withinWeight = weight >= min && weight <= max;
             const matchesColor = !filters.color || stock.COLOR === filters.color;
             const matchesClarity = !filters.clarity || normalize(stock.CLARITY) === normalize(filters.clarity);
-            const matchesShape = !filters.shape || getShapeKey(stock.SHAPE) === getShapeKey(filters.shape);
-            console.log("matchesShape = ", filters.shape, "stock = ", stock.SHAPE)
+            // const matchesShape = !filters.shape || getShapeKey(stock.SHAPE) === getShapeKey(filters.shape);
+            // const shapeValue = shapeMap[filters.shape] || filters.shape;
+            // const matchesShape = !filters.shape || stock.SHAPE === shapeValue;
+            const matchesShape = !filters.shape || normalizeShape(stock.SHAPE) === normalizeShape(filters.shape);
+
 
             return withinWeight && matchesColor && matchesClarity && matchesShape;
         });
 
+        if (filters.shape || filters.color || filters.clarity || weightMin !== 0 || weightMax !== 25) {
+            // Only show error if filters are applied
+            if (result.length === 0) {
+                setError("No matching results found.");
+            }
+        }
+
+        // if (result.length === 0) {
+        // setError("No matching results found.");
+        // }
+
         setFilteredData(result);
     };
+
+    const resetFilter = () => {
+        setFilters({ color: '', clarity: '', shape: '' });
+        setWeightMin(0);
+        setWeightMax(25);
+        setWeightRange([0, 25]);
+        setFilteredData([]);
+        fetchDiamondStock();
+        setError(null);
+    }
 
     // use enter key as tab
     const handleEnterAsTab = (e) => {
@@ -550,51 +582,6 @@ const StockData = () => {
     return (
         <>
             <Box>
-                {/* <Box display="flex" justifyContent="flex-start" sx={{ mb: 2, gap: 2 }}>
-                    <label htmlFor="import-excel">
-                        <input
-                            type="file"
-                            accept=".xlsx, .xls"
-                            id="import-excel"
-                            onChange={handleImportExcel}
-                            style={{ display: 'none' }}
-                        />
-                        <button
-                            onClick={() => document.getElementById('import-excel').click()}
-                            style={{
-                                backgroundColor: '#388e3c',
-                                color: 'white',
-                                padding: '10px 20px',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Import Excel
-                        </button>
-                    </label>
-
-                    <Box display="flex" justifyContent="flex-end">
-                        <button onClick={exportToExcel} style={{
-                            margin: "0px",
-                            backgroundColor: '#1976d2',
-                            color: 'white',
-                            padding: '10px 20px',
-                            border: 'none',
-                            borderRadius: '5px',
-                            cursor: 'pointer'
-                        }}>
-                            Export to Excel
-                        </button>
-                    </Box>
-                    <button onClick={uploadData} disabled={stocks.length === 0}>Upload to DB</button>
-                    <button type='button' onClick={fetchDiamondStock}>Show</button>
-                    <button type='button' onClick={handleStatus} disabled={rowData.length === 0}>Hold</button>
-                    <Button type='button' onClick={handleSell} disabled={rowData.length === 0} variant='contained' color='error'>
-                        Sell
-                    </Button>
-                </Box> */}
-
                 <Box mb={2}>
                     <Stack direction="row" spacing={2} flexWrap="wrap">
                         <label htmlFor="import-excel">
@@ -630,7 +617,7 @@ const StockData = () => {
                             color="secondary"
                             startIcon={<CloudUpload />}
                             onClick={uploadData}
-                            disabled={stocks.length === 0}
+                            disabled={excelData.length === 0}
                         >
                             Upload to DB
                         </Button>
@@ -781,17 +768,19 @@ const StockData = () => {
                     <Button variant="contained" size="small" onClick={handleSearch}>
                         Apply Filters
                     </Button>
-                    {/* Reset Button */}
+                    {/* Reset filter */}
                     <Button
                         variant="outlined"
                         size="small"
-                        onClick={() => {
-                            setFilters({ color: '', clarity: '' });
-                            setWeightMin(0);
-                            setWeightMax(25);
-                            setWeightRange([0, 25]);
-                            setFilteredData(stocks);
-                        }}
+                        // onClick={() => {
+                        //     setFilters({ color: '', clarity: '', shape: '' });
+                        //     setWeightMin(0);
+                        //     setWeightMax(25);
+                        //     setWeightRange([0, 25]);
+                        //     setFilteredData(stocks);
+                        //     setError(null);
+                        // }}
+                        onClick={resetFilter}
                     >
                         Reset Filters
                     </Button>
@@ -1065,7 +1054,14 @@ const StockData = () => {
                     </form>
                 </div>
 
-                {loading ? (
+                {/* {filteredData.length === 0 && filters.shape + filters.color + filters.clarity && (
+                    setError("No results found matching your filter criteria.")
+                )} */}
+                {/* <div style={{ padding: '1rem', textAlign: 'center', color: 'red' }}>
+                    No results found matching your filter criteria.
+                </div> */}
+
+                {/* {loading ? (
                     <Box
                         // display="flex"
                         // flexDirection="column"
@@ -1080,23 +1076,48 @@ const StockData = () => {
                     >
                         <CircularProgress />
                         <Typography variant="body1" mt={2}>
-                            {/* Loading stock data... */}
-                            Loading...
-                        </Typography>
-                    </Box>
+                            Loading stock data...
+                Loading...
+            </Typography>
+        </Box >
                 ) : (
-                    <StockTable
-                        stocks={filteredData.length > 0 ? filteredData : stocks}
-                        loading={loading}
-                        onRowClick={handleRowClick}
-                    />
-                )}
+    <StockTable
+        stocks={filteredData.length > 0 ? filteredData : stocks}
+        loading={loading}
+        onRowClick={handleRowClick}
+    />
+)}
 
-                {error && (
-                    <Box textAlign="center" mt={2} color="error.main">
-                        {error}
-                    </Box>
-                )}
+{
+    error && (
+        <Box textAlign="center" mt={2} color="error.main">
+            {error}
+        </Box>
+    )
+} */}
+
+                {
+                    loading ? (
+                        <Box className={styles.loadingOverlay}>
+                            <CircularProgress />
+                            <Typography variant="body1" mt={2}>Loading...</Typography>
+                        </Box>
+                    ) : error ? (
+                        <Box textAlign="center" mt={2} color="error.main">
+                            {error}
+                        </Box>
+                    ) : (
+                        <StockTable
+                            // stocks={filteredData.length > 0 ? filteredData : stocks}
+                            stocks={excelData.length > 0 ? excelData : (filteredData.length > 0 ? filteredData : stocks)}
+                            showAllColumns={excelData.length > 0}
+                            loading={loading}
+                            onRowClick={handleRowClick}
+                        />
+                    )
+                }
+
+
 
                 {/* 
                 <StockTable

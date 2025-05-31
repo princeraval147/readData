@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import style from './Header.module.css'
 import { NavLink, useNavigate } from 'react-router-dom'
 import Axios from 'axios';
+import API from '../API'
 
 const Header = () => {
 
@@ -18,7 +19,7 @@ const Header = () => {
 
     const logout = async () => {
         try {
-            await Axios.post('http://localhost:5000/api/auth/logout', {}, { withCredentials: true });
+            await API.post('/auth/logout', {}, { withCredentials: true });
             setIsLogin(false);
             Navigate("/login");
         } catch (error) {
@@ -86,7 +87,7 @@ const Header = () => {
             // }
             // console.log("Token found in localStorage:", token);
             try {
-                const response = await Axios.get('http://localhost:5000/api/auth/validate-token', {
+                const response = await API.get('/auth/validate-token', {
                     withCredentials: true,
                     // headers: {
                     // Authorization: `Bearer ${token}`,

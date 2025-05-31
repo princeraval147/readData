@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import API from '../../API';
 import styles from './ShareAPI.module.css'
-import { Box, Button, Container, TextField, Typography } from '@mui/material';
+import { Box, Button, Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 
 const ShareAPI = () => {
 
@@ -49,6 +49,26 @@ const ShareAPI = () => {
         }
         console.log("FormData = ", formData);
     };
+
+    const [apiData, setAPIData] = useState([]);
+    const fetchAPIHistory = async () => {
+        // const response = API.get('/shared-api-data')
+        //     .then(res => setShares(res.data))
+        //     .catch(err => console.error('Error fetching shares:', err));
+        // setAPIData(response.data);
+        try {
+            const response = await API.get("/shared-api-data", { withCredentials: true });
+            setAPIData(response.data);
+        } catch (error) {
+            console.error("Can't fetch shared API data : ", error);
+        }
+    }
+
+    useEffect(() => {
+        fetchAPIHistory();
+    }, []);
+
+    console.log(apiData);
 
 
 
@@ -108,6 +128,46 @@ const ShareAPI = () => {
                     </Box>
                 </form >
             </Container>
+
+            <TableContainer sx={{ maxWidth: 800, margin: 'auto', mt: 3 }}>
+                <Typography
+                    variant="h6"
+                    gutterBottom
+                    // sx={{ p: 2 }}
+                    sx={{
+                        p: 2,
+                        fontWeight: 900,
+                        fontSize: 30,
+                        // backgroundColor: 'primary.main',
+                        // color: 'black',
+                        textAlign: 'center',
+                        borderTopLeftRadius: '4px',
+                        borderTopRightRadius: '4px'
+                    }}
+                >
+                    API Share History
+                </Typography>
+                <Table>
+                    <TableHead sx={{ backgroundColor: 'grey.100' }}>
+                        <TableRow>
+                            <TableCell>#</TableCell>
+                            <TableCell>Recipient Name</TableCell>
+                            <TableCell>Recipient Email</TableCell>
+                            <TableCell>Sent At</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {apiData.map((share, index) => (
+                            <TableRow key={share.id}>
+                                <TableCell>{index + 1}</TableCell>
+                                <TableCell>{share.NAME}</TableCell>
+                                <TableCell>{share.RECIPIENT_EMAIL}</TableCell>
+                                <TableCell>{new Date(share.SENT_AT).toLocaleDateString()}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         </>
     )
 }
