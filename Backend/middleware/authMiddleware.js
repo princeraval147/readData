@@ -7,7 +7,7 @@ const authenticateToken = async (req, res, next) => {
     const token = req.cookies.token; // <-- 🔁 Changed from headers to cookies
 
     if (!token) {
-        return res.status(401).json({ status: 401, message: 'Token missing | Unauthorized access' });
+        return res.status(401).json({ message: 'Token missing' });
     }
 
     const query = 'SELECT user_id FROM tokens WHERE token = ?';

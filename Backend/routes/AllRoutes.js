@@ -12,10 +12,13 @@ const {
     // approve,
     login,
     shareApi,
-    SharedAPI
+    SharedAPI,
+    apiDiamondStock
 } = require("../controller/AllController");
-
 const authenticateToken = require('../middleware/authMiddleware');
+const authenticateHeader = require('../middleware/authenticateHeader');
+
+router.get("/api/diamond-stock", authenticateHeader, apiDiamondStock);
 
 // user register/login
 router.post("/api/auth/register", register);

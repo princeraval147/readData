@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const pool = require('../config/pool');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const transporter = require('../config/mailer');
@@ -118,7 +119,6 @@ exports.login = async (req, res) => {
             secure: true,
             maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
         });
-
         // 4. Send response
         res.json({
             message: 'Login successful',
@@ -432,6 +432,21 @@ exports.getDiamondStock = async (req, res) => {
     } catch (err) {
         console.error('Error fetching data:', err);
         res.status(500).json({ message: 'Error fetching data' });
+    }
+}
+
+exports.apiDiamondStock = async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID missing in token' });
+    }
+    const query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
+    try {
+        const [results] = await pool.query(query, [userId]);
+        res.json(results);
+    } catch (err) {
+        console.error('Error fetching API data ś:', err);
+        res.status(500).json({ message: 'Error fetching API data' });
     }
 }
 
