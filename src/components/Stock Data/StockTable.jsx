@@ -52,7 +52,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false }) =
         if (stocks.length > 0) {
             const missingHeaders = headersToShow.filter(h => !Object.keys(stocks[0]).includes(h));
             if (missingHeaders.length > 0) {
-                console.warn("Missing headers in data:", missingHeaders);
+                console.log("Missing headers in data:", missingHeaders);
             }
         }
     }, [stocks]);

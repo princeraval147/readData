@@ -25,6 +25,7 @@ const StockData = () => {
 
     const navigate = useNavigate();
 
+    const [updating, setUpdating] = useState(false);
     const [loading, setLoading] = useState(false);
     const fetchDiamondStock = async () => {
         setLoading(true);
@@ -110,6 +111,19 @@ const StockData = () => {
         'DOCUMENT_NO': 'CERTIFICATE_NUMBER',
     };
 
+    const validateExcelHeaders = (sheet) => {
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+        if (!jsonData.length) return false;
+
+        const actualHeaders = Object.keys(jsonData[0])
+            .map(h => h.trim().toLowerCase());
+
+        const expectedHeaders = ['weight', 'clarity'];
+
+        return expectedHeaders.every(header => actualHeaders.includes(header));
+    };
+
     const handleImportExcel = (e) => {
         setLoading(true);
         const file = e.target.files[0];
@@ -120,6 +134,17 @@ const StockData = () => {
             const workbook = XLSX.read(data, { type: 'array' });
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
+
+            // ✅ Validate headers
+            if (!validateExcelHeaders(worksheet)) {
+                setLoading(false);
+                setError("Invalid Excel format.");
+                console.log("Invalid Excel format. Expected columns: Weight, Clarity, Cut");
+                setExcelData([]);
+                return;
+            }
+
+            // ✅ Parse if valid
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
             setLoading(false);
@@ -332,7 +357,6 @@ const StockData = () => {
                 { field: 'party', ref: partyRef, label: 'Party' },
                 { field: 'price', ref: priceRef, label: 'Price' },
                 { field: 'finalprice', ref: finalPriceRef, label: 'Final Price' },
-                { field: 'drate', ref: drateRef, label: 'Dollar Rate' },
                 { field: 'amountRs', ref: amountRsRef, label: 'Amount Rs' },
             ];
 
@@ -363,7 +387,6 @@ const StockData = () => {
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
-            setLoading(true);
             await API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party });
             setRowData([]);
             resetFormData();
@@ -377,8 +400,6 @@ const StockData = () => {
         } catch (error) {
             console.error("Error in handleStatus:", error);
             alert("Failed to update status");
-        } finally {
-            setLoading(false);
         }
     }
 
@@ -388,7 +409,6 @@ const StockData = () => {
             { field: 'party', ref: partyRef, label: 'Party' },
             { field: 'price', ref: priceRef, label: 'Price' },
             { field: 'finalprice', ref: finalPriceRef, label: 'Final Price' },
-            { field: 'drate', ref: drateRef, label: 'Dollar Rate' },
             { field: 'amountRs', ref: amountRsRef, label: 'Amount Rs' },
         ];
 
@@ -400,7 +420,8 @@ const StockData = () => {
             }
         }
 
-        setLoading(true); // Start loading
+        // setLoading(true); // Start loading
+        setUpdating(true); // Start loading
         try {
             // 1. Insert into sell_data
             const sellPayload = {
@@ -427,7 +448,6 @@ const StockData = () => {
                 resetFormData();
                 try {
                     await fetchDiamondStock();
-                    console.log("fetchDiamondStock finished");
                 } catch (err) {
                     console.error("Error in fetchDiamondStock:", err);
                 }
@@ -439,12 +459,12 @@ const StockData = () => {
             console.error("Error in handleSell:", error);
             alert("Failed to sell diamond / Delete stock");
         } finally {
-            setLoading(false);
+            // setLoading(false);
+            setUpdating(false);
         }
     }
 
     const handleRowClick = useCallback((row) => {
-        // console.log("Row clicked:", row);
         setRowData(row);
         setFormData({
             barcode: row.BARCODE || '',
@@ -461,14 +481,12 @@ const StockData = () => {
             sym: row.SYMMETRY || 'EX',
             length: row.LENGTH || '',
             width: row.WIDTH || '',
-            drate: row.DOLLAR_RATE || '',
-            price: row.PRICE_PER_CARAT || '',
-            finalprice: row.FINAL_PRICE || '',
-            party: row.PARTY || '',
+            drate: row.DOLLAR_RATE || '0',
+            price: row.PRICE_PER_CARAT || '0',
+            finalprice: row.FINAL_PRICE || '0',
             due: row.DUE || ''
         });
     }, []);
-
 
 
     // Search Filter
@@ -636,7 +654,6 @@ const StockData = () => {
                             onClick={handleStatus}
                             disabled={rowData.length === 0}
                         >
-                            {/* Hold */}
                             {rowData.STATUS === 'HOLD' ? 'Make Available' : 'Hold'}
                         </Button>
 
@@ -647,7 +664,6 @@ const StockData = () => {
                             onClick={handleSell}
                             disabled={rowData.length === 0}
                         >
-                            {/* {loading ? 'Processing...' : 'Sell'} */}
                             Sell
                         </Button>
                     </Stack>

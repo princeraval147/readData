@@ -248,13 +248,13 @@ exports.getFL = async (req, res) => {
 // Diamond Stock Routes
 exports.addDiamondStock = (req, res) => {
     const userId = req.user.id;
-    const { barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, party, due } = req.body;
+    const { barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, due } = req.body;
     const query = `INSERT INTO diamond_stock 
-        (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE, PARTY, DUE, STATUS)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE, DUE, STATUS)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
     try {
-        const [rows] = pool.query(query, [userId, barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, party, due, 'AVAILABLE']);
+        const [rows] = pool.query(query, [userId, barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, due, 'AVAILABLE']);
         res.status(201).json(rows);
     } catch (error) {
         console.error("Server Error : ", error);
@@ -300,7 +300,6 @@ exports.deleteSell = async (req, res) => {
 
 exports.addSell = async (req, res) => {
     const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due } = req.body;
-    console.log("Data add to sell_Data : ", req.body);
     const query = `
         INSERT INTO sell_data (
             ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
