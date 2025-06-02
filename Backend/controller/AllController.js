@@ -1,4 +1,3 @@
-const db = require('../config/db');
 const pool = require('../config/pool');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -8,44 +7,32 @@ const generateToken = require('../utils/generateToken');
 const token = generateToken(16);
 
 // user
-exports.register = (req, res) => {
+exports.register = async (req, res) => {
     const { username, email, password } = req.body;
 
     // Step 1: Check if email already exists
-    const checkQuery = 'SELECT * FROM USERS WHERE EMAIL = ?';
-    db.query(checkQuery, [email], (err, results) => {
-        if (err) {
-            console.error('Email check error:', err);
-            return res.status(500).json({ message: 'Server error during registration' });
-        }
-
-        if (results.length > 0) {
+    try {
+        const checkQuery = 'SELECT * FROM USERS WHERE EMAIL = ?';
+        const [existingUsers] = await pool.query(checkQuery, [email]);
+        if (existingUsers.length > 0) {
             return res.status(409).json({ message: 'Email already exists' });
         }
 
         // Step 2: Insert user if email not found
         const insertQuery = 'INSERT INTO USERS (USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?)';
-        db.query(insertQuery, [username, email, password], (err, result) => {
-            if (err) {
-                console.error('Registration error:', err);
-                return res.status(500).json({ message: 'Registration failed' });
-            }
+        const [insertResult] = await pool.query(insertQuery, [username, email, password]);
+        const userId = insertResult.insertId;
 
-            const userId = result.insertId;
+        // Step 3: Store token for new user
+        const insertTokenQuery = 'INSERT INTO tokens (USER_ID, TOKEN) VALUES (?, ?)';
+        await pool.query(insertTokenQuery, [userId, token]);
 
-            // Step 3: Store token for new user
-            const insertTokenQuery = 'INSERT INTO tokens (USER_ID, TOKEN) VALUES (?, ?)';
-            db.query(insertTokenQuery, [userId, token], (err) => {
-                if (err) {
-                    console.error('Token storage error:', err);
-                    return res.status(500).json({ message: 'Token generation failed' });
-                }
-
-                const mailOptions = {
-                    from: process.env.MAIL_USER,
-                    to: 'mahesh.lex@gmail.com',
-                    subject: 'New User Registration - Approval Needed',
-                    html: `
+        // Step 4: Send approval mail
+        const mailOptions = {
+            from: process.env.MAIL_USER,
+            to: 'mahesh.lex@gmail.com',
+            subject: 'New User Registration - Approval Needed',
+            html: `
                     <p><strong>New user registered on the platform.</strong></p>
                     <ul>
                         <li><strong>Username:</strong> ${username}</li>
@@ -54,29 +41,31 @@ exports.register = (req, res) => {
                     <p>Please approve this user from Database.</p>
                 `
 
-                };
-                transporter.sendMail(mailOptions, (err, info) => {
-                    if (err) {
-                        console.error('Error sending email:', err);
-                        // Optional: You can delete user + token here if you want a clean rollback
-                    } else {
-                        console.log('Approval email sent:', info.response);
-                    }
-                });
-
-                // Step 4: Respond with token and basic user info
-                res.status(201).json({
-                    message: 'User registered successfully',
-                    token,
-                    user: {
-                        id: userId,
-                        email,
-                        username
-                    }
-                });
-            });
+        };
+        transporter.sendMail(mailOptions, (err, info) => {
+            if (err) {
+                console.error('Error sending email:', err);
+                // Optional: You can delete user + token here if you want a clean rollback
+            } else {
+                console.log('Approval email sent:', info.response);
+            }
         });
-    });
+
+        // Step 5: Send response
+        res.status(201).json({
+            message: 'User registered successfully',
+            token,
+            user: {
+                id: userId,
+                email,
+                username
+            }
+        });
+
+    } catch (error) {
+        console.error("Registration Error : ", error);
+        res.status(500).json({ message: 'Server error during registration' });
+    }
 }
 
 
@@ -245,15 +234,14 @@ exports.getClarity = async (req, res) => {
     }
 }
 
-exports.getFL = (req, res) => {
-    db.query("SELECT * FROM fl", (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Faild to fetch FL" });
-        } else {
-            res.status(200).json(result);
-        }
-    });
+exports.getFL = async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT * FROM fl ORDER BY FID");
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("DB error : ", error);
+        res.status(500).json({ error: "Failed to fetch FL" });
+    }
 }
 
 
@@ -265,15 +253,13 @@ exports.addDiamondStock = (req, res) => {
         (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE, PARTY, DUE, STATUS)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-    // ON DUPLICATE KEY UPDATE
-    db.query(query, [userId, barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, party, due, 'AVAILABLE'], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Failed to add diamond stock" });
-        } else {
-            res.status(201).json({ message: "Diamond stock added successfully", id: result.insertId });
-        }
-    });
+    try {
+        const [rows] = pool.query(query, [userId, barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, party, due, 'AVAILABLE']);
+        res.status(201).json(rows);
+    } catch (error) {
+        console.error("Server Error : ", error);
+        res.status(500).json({ error: "Failed to add diamond stock" });
+    }
 }
 
 exports.updateStock = async (req, res) => {
@@ -344,9 +330,8 @@ exports.uploadExcel = async (req, res) => {
     }
 
     try {
-        const dbPromise = pool;
         // Get list of valid column names from the 'stocks' table
-        const [columnsRows] = await dbPromise.query("SHOW COLUMNS FROM diamond_stock");
+        const [columnsRows] = await pool.query("SHOW COLUMNS FROM diamond_stock");
         // console.log('Columns:', columnsRows);
         const validColumns = columnsRows.map(row => row.Field);
 
@@ -366,10 +351,7 @@ exports.uploadExcel = async (req, res) => {
             if (Object.keys(filteredStock).length === 0) continue;
 
             // Delete old entry
-            await dbPromise.query(`DELETE FROM diamond_stock WHERE STOCKID = ?`, [STOCKID]);
-
-            // Insert new entry
-            // await dbPromise.query(`INSERT INTO DIAMOND_STOCK SET ?`, [filteredStock]);
+            await pool.query(`DELETE FROM diamond_stock WHERE STOCKID = ?`, [STOCKID]);
         }
 
         const insertQuery = `
@@ -406,7 +388,7 @@ exports.uploadExcel = async (req, res) => {
             item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || ''
         ]);
         // console.log('Column Count:', values[0].length);
-        const [result] = await dbPromise.query(insertQuery, [values]);
+        const [result] = await pool.query(insertQuery, [values]);
         res.json({ message: `Inserted ${result.affectedRows} rows` });
 
 
@@ -453,6 +435,7 @@ exports.apiDiamondStock = async (req, res) => {
 // Share API
 const ApiShareData = require('../models/apiShareData');
 const ShareAPI = require('../config/shareAPIEmail');
+// const { useId } = require('react');
 exports.shareApi = async (req, res) => {
     const { name, email } = req.body;
     const token = req.cookies.token;
