@@ -5,8 +5,20 @@ import { Box, Button, Container, Table, TableBody, TableCell, TableContainer, Ta
 
 const ShareAPI = () => {
 
-    // const [email, setEmail] = useState('');
-    // const [name, setName] = useState('');
+    const [apiData, setAPIData] = useState([]);
+    const fetchAPIHistory = async () => {
+        // const response = API.get('/shared-api-data')
+        //     .then(res => setShares(res.data))
+        //     .catch(err => console.error('Error fetching shares:', err));
+        // setAPIData(response.data);
+        try {
+            const response = await API.get("/shared-api-data", { withCredentials: true });
+            setAPIData(response.data);
+        } catch (error) {
+            console.error("Can't fetch shared API data : ", error);
+        }
+    }
+
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -35,8 +47,8 @@ const ShareAPI = () => {
         setLoading(true);
         try {
             const response = await API.post("/share-api", formData, { withCredentials: true });
-            // console.log(response.data);
             setStatus(response.data.message || 'Email sent successfully!');
+            fetchAPIHistory();
             setFormData({
                 name: "",
                 email: ""
@@ -47,22 +59,7 @@ const ShareAPI = () => {
         } finally {
             setLoading(false);
         }
-        // console.log("FormData = ", formData);
     };
-
-    const [apiData, setAPIData] = useState([]);
-    const fetchAPIHistory = async () => {
-        // const response = API.get('/shared-api-data')
-        //     .then(res => setShares(res.data))
-        //     .catch(err => console.error('Error fetching shares:', err));
-        // setAPIData(response.data);
-        try {
-            const response = await API.get("/shared-api-data", { withCredentials: true });
-            setAPIData(response.data);
-        } catch (error) {
-            console.error("Can't fetch shared API data : ", error);
-        }
-    }
 
     useEffect(() => {
         fetchAPIHistory();

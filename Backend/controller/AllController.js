@@ -443,12 +443,11 @@ exports.shareApi = async (req, res) => {
     const token = req.cookies.token;
     const userId = req.user.id;
 
-
     if (!email || !name) return res.status(400).json({ message: 'Email and name are required' });
     if (!token) return res.status(401).json({ message: 'Authentication token missing' });
 
     try {
-        // ShareAPI({ name, email, token });    // send mail
+        ShareAPI({ name, email, token });
         res.json({ message: 'Email sent successfully!' });
 
         // Store in DB api_shares table 
