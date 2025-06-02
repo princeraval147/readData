@@ -363,6 +363,7 @@ const StockData = () => {
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
+            setLoading(true);
             await API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party });
             setRowData([]);
             resetFormData();
@@ -376,6 +377,8 @@ const StockData = () => {
         } catch (error) {
             console.error("Error in handleStatus:", error);
             alert("Failed to update status");
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -397,6 +400,7 @@ const StockData = () => {
             }
         }
 
+        setLoading(true); // Start loading
         try {
             // 1. Insert into sell_data
             const sellPayload = {
@@ -412,16 +416,30 @@ const StockData = () => {
                 due: formData.due,
             };
             await API.post('/add-sell', sellPayload, { withCredentials: true });
-            const response = await API.delete(`/delete-stock/${rowData.ID}`);
+            let deleteResponse = null;
+            try {
+                deleteResponse = await API.delete(`/delete-stock/${rowData.ID}`);
 
-            alert(response.data.message);
-            setRowData([]);
-            resetFormData();
-            fetchDiamondStock();
-
+                if (deleteResponse?.data?.message) {
+                    alert(deleteResponse.data.message);
+                }
+                setRowData([]);
+                resetFormData();
+                try {
+                    await fetchDiamondStock();
+                    console.log("fetchDiamondStock finished");
+                } catch (err) {
+                    console.error("Error in fetchDiamondStock:", err);
+                }
+            } catch (deleteError) {
+                console.error("DELETE failed:", deleteError);
+                alert("Failed to delete stock: " + (deleteError?.response?.data?.error || deleteError.message));
+            }
         } catch (error) {
             console.error("Error in handleSell:", error);
             alert("Failed to sell diamond / Delete stock");
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -530,13 +548,13 @@ const StockData = () => {
         setFilteredData(result);
     };
 
-    const resetFilter = () => {
+    const resetFilter = async () => {
         setFilters({ color: '', clarity: '', shape: '' });
         setWeightMin(0);
         setWeightMax(25);
         setWeightRange([0, 25]);
         setFilteredData([]);
-        fetchDiamondStock();
+        await fetchDiamondStock();
         setError(null);
     }
 
@@ -629,6 +647,7 @@ const StockData = () => {
                             onClick={handleSell}
                             disabled={rowData.length === 0}
                         >
+                            {/* {loading ? 'Processing...' : 'Sell'} */}
                             Sell
                         </Button>
                     </Stack>

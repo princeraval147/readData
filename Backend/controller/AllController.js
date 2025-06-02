@@ -298,25 +298,23 @@ exports.updateStock = async (req, res) => {
 
 }
 
-exports.deleteSell = (req, res) => {
+exports.deleteSell = async (req, res) => {
     const { id } = req.params;
-    // console.log("Deleting diamond stock with ID:", id);
+
     const query = `DELETE FROM diamond_stock WHERE ID = ?`;
-    db.query(query, [id], (err, result) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: "Failed to delete diamond stock" });
-        } else if (result.affectedRows === 0) {
-            res.status(404).json({ error: "Diamond stock not found" });
-        } else {
-            res.status(200).json({ message: "Diamond stock deleted successfully" });
-        }
-    });
-}
+
+    try {
+        await pool.query(query, [id]);
+        res.status(200).json({ success: true, message: "Diamond stock deleted successfully" });
+    } catch (err) {
+        console.error("Delete error:", err);
+        return res.status(500).json({ error: "Failed to delete diamond stock" });
+    }
+};
 
 exports.addSell = async (req, res) => {
     const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due } = req.body;
-
+    console.log("Data add to sell_Data : ", req.body);
     const query = `
         INSERT INTO sell_data (
             ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
