@@ -54,6 +54,13 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 app.use(allRoutes);
+// Handle uncaught errors as JSON
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(err.status || 500).json({
+        error: err.message || 'Internal Server Error',
+    });
+});
 
 //  can't stop server
 // app.get('/', (req, res, next) => {
