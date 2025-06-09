@@ -266,13 +266,13 @@ exports.updateStock = async (req, res) => {
     const { id } = req.params;
     const { status, party } = req.body;
 
-    if (!party) {
-        return res.status(400).json({ message: "Party is required." });
-    }
-    const query = "UPDATE diamond_stock SET STATUS = ?, PARTY = ? WHERE ID = ?";
+    // if (!party) {
+    //     return res.status(400).json({ message: "Party is required." });
+    // }
+    const query = "UPDATE diamond_stock SET STATUS = ? WHERE ID = ?";
 
     try {
-        const [result] = await pool.query(query, [status, party, id]);
+        const [result] = await pool.query(query, [status, id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Diamond stock not found" });
         }

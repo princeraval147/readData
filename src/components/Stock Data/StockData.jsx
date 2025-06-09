@@ -8,7 +8,7 @@ import StockTable from './StockTable';
 import CircularProgress from '@mui/material/CircularProgress';
 import Slider from '@mui/material/Slider';
 import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, TextField, Stack } from '@mui/material';
-import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart, CheckCircle } from '@mui/icons-material';
+import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart, CheckCircle, Newspaper } from '@mui/icons-material';
 import API from '../../API';
 
 const StockData = () => {
@@ -387,7 +387,8 @@ const StockData = () => {
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
-            await API.put(`/update-status/${rowData.ID}`, { status: newStatus, party: formData.party });
+            console.log("Send to backend is = ", rowData.ID, newStatus, formData.party);
+            await API.put(`/update-status/${rowData.ID}`, { status: newStatus });
             setRowData([]);
             resetFormData();
             // update temprory insted fetchDiamondStock
