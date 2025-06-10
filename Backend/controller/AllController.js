@@ -246,15 +246,39 @@ exports.getFL = async (req, res) => {
 
 
 // Diamond Stock Routes
-exports.addDiamondStock = (req, res) => {
+exports.addDiamondStock = async (req, res) => {
     const userId = req.user.id;
-    const { barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, due } = req.body;
+    const {
+        barcode,
+        kapan,
+        lot,
+        tag,
+        certificate,
+        weight,
+        shape,
+        color,
+        clarity,
+        cut,
+        pol,
+        sym,
+        length,
+        width,
+        price,
+        drate,
+        amountRs,
+        finalprice,
+        due
+    } = req.body;
     const query = `INSERT INTO diamond_stock 
         (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE, DUE, STATUS)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
     try {
-        const [rows] = pool.query(query, [userId, barcode, kapan, lot, tag, certificate, weight, shape, color, clarity, cut, pol, sym, length, width, price, drate, amountRs, finalprice, due, 'AVAILABLE']);
+        const [rows] = await pool.query(query, [
+            userId, barcode, kapan, lot, tag, certificate, weight,
+            shape, color, clarity, cut, pol, sym, length, width, price,
+            drate, amountRs, finalprice, due, 'AVAILABLE'
+        ]);
         res.status(201).json(rows);
     } catch (error) {
         console.error("Server Error : ", error);

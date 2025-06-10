@@ -324,12 +324,13 @@ const StockData = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // console.log("Form Data Submitted: ", formData);s
+        // console.log("Form Data Submitted: ", formData);
         try {
             API.post('/add-diamondstock', formData, { withCredentials: true })
                 .then((response) => {
                     // console.log("Response from server:", response.data);
-                    alert(response.data.message);
+                    // alert(response.data.message);
+                    alert("Data inserted Successfully");
                     resetFilter();  // reset search filter also call fetchDiamondStock
                     resetFormData();
                     setTimeout(() => {
