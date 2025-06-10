@@ -322,27 +322,26 @@ const StockData = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         // console.log("Form Data Submitted: ", formData);
         try {
-            API.post('/add-diamondstock', formData, { withCredentials: true })
-                .then((response) => {
-                    // console.log("Response from server:", response.data);
-                    // alert(response.data.message);
-                    alert("Data inserted Successfully");
-                    resetFilter();  // reset search filter also call fetchDiamondStock
-                    resetFormData();
-                    setTimeout(() => {
-                        barcoderef.current.focus();
-                    }, 100);
-                })
-                .catch((error) => {
-                    console.error("Error submitting form:", error);
-                    alert("Failed to submit data");
-                });
+            const response = await API.post('/add-diamondstock', formData, {
+                withCredentials: true
+            });
+
+            alert("Data inserted Successfully");
+            resetFilter();        // Reset filters and fetch updated stock
+            resetFormData();      // Clear form fields
+
+            setTimeout(() => {
+                barcoderef.current.focus();
+            }, 100);
+
+
         } catch (error) {
-            console.error("Error in handleSubmit:", error);
+            console.error("Error submitting form:", error);
+            alert("Failed to submit data");
         }
 
     }
