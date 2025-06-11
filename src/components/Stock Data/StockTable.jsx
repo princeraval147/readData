@@ -11,7 +11,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false }) =
     const rowsPerPage = 50;
 
     const headersToShow = [
-        "ID", "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT",
+        "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT",
         "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
         "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN",
         "LAB", "CERTIFICATE_COMMENT", "CITY", "STATE", "COUNTRY",
@@ -79,16 +79,19 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false }) =
                                             background: '#f0f0f0',
                                             zIndex: 1
                                         }}>
+                                        <TableCell sx={{ backgroundColor: '#f0f0f0', fontWeight: 'bold', }}>ID</TableCell>
                                         {headers.map((header, i) => (
-                                            <TableCell
-                                                key={i}
-                                                sx={{
-                                                    backgroundColor: '#f0f0f0',
-                                                    fontWeight: 'bold',
-                                                }}
-                                            >
-                                                {header}
-                                            </TableCell>
+                                            <>
+                                                <TableCell
+                                                    key={i}
+                                                    sx={{
+                                                        backgroundColor: '#f0f0f0',
+                                                        fontWeight: 'bold',
+                                                    }}
+                                                >
+                                                    {header}
+                                                </TableCell>
+                                            </>
                                         ))}
                                     </TableRow>
                                 </TableHead>
