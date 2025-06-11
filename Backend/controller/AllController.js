@@ -249,35 +249,19 @@ exports.getFL = async (req, res) => {
 exports.addDiamondStock = async (req, res) => {
     const userId = req.user.id;
     const {
-        barcode,
-        kapan,
-        lot,
-        tag,
-        certificate,
-        weight,
-        shape,
-        color,
-        clarity,
-        cut,
-        pol,
-        sym,
-        length,
-        width,
-        price,
-        drate,
-        amountRs,
-        finalprice,
-        due
+        barcode, kapan, lot, tag, certificate, weight,
+        shape, color, clarity, cut, pol, sym, length,
+        width, price, drate, amountRs, finalprice, due
     } = req.body;
     const query = `INSERT INTO diamond_stock 
-        (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE, DUE, STATUS)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE STATUS)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
     try {
         const [rows] = await pool.query(query, [
             userId, barcode, kapan, lot, tag, certificate, weight,
             shape, color, clarity, cut, pol, sym, length, width, price,
-            drate, amountRs, finalprice, due, 'AVAILABLE'
+            drate, amountRs, finalprice, 'AVAILABLE'
         ]);
         res.status(201).json(rows);
     } catch (error) {
@@ -289,10 +273,6 @@ exports.addDiamondStock = async (req, res) => {
 exports.updateStock = async (req, res) => {
     const { id } = req.params;
     const { status, party } = req.body;
-
-    // if (!party) {
-    //     return res.status(400).json({ message: "Party is required." });
-    // }
     const query = "UPDATE diamond_stock SET STATUS = ? WHERE ID = ?";
 
     try {
@@ -327,14 +307,14 @@ exports.addSell = async (req, res) => {
     const query = `
         INSERT INTO sell_data (
             ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
-            DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, DUE
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            DOLLAR_RATE, RS_AMOUNT, STATUS
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
         const [result] = await pool.query(query, [
             id, stoneid, weight, price, finalprice,
-            drate, amountRs, status, party, due
+            drate, amountRs, status
         ]);
 
         res.status(201).json({ message: "Sell record added successfully", id: result.insertId });

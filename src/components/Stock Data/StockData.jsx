@@ -14,7 +14,7 @@ import API from '../../API';
 const StockData = () => {
 
     const barcoderef = useRef(null);
-    const partyRef = useRef(null);
+    // const partyRef = useRef(null);
     const priceRef = useRef(null);
     const finalPriceRef = useRef(null);
     const drateRef = useRef(null);
@@ -351,23 +351,6 @@ const StockData = () => {
     const handleStatus = async () => {
         const isHolding = rowData.STATUS === 'HOLD';
         const newStatus = isHolding ? 'AVAILABLE' : 'HOLD';
-        // required
-        if (!isHolding) {
-            const requiredFields = [
-                { field: 'party', ref: partyRef, label: 'Party' },
-                { field: 'price', ref: priceRef, label: 'Price' },
-                { field: 'finalprice', ref: finalPriceRef, label: 'Final Price' },
-                { field: 'amountRs', ref: amountRsRef, label: 'Amount Rs' },
-            ];
-
-            for (const { field, ref, label } of requiredFields) {
-                if (!formData[field]) {
-                    alert(`Please enter ${label}.`);
-                    setTimeout(() => ref?.current?.focus(), 100);
-                    return;
-                }
-            }
-        }
 
         try {
             if (!isHolding) {
@@ -381,20 +364,20 @@ const StockData = () => {
                     drate: formData.drate,
                     amountRs: formData.amountRs,
                     status: newStatus,
-                    party: formData.party,
-                    due: formData.due,
+                    // party: formData.party,
+                    // due: formData.due,
                 };
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
-            console.log("Send to backend is = ", rowData.ID, newStatus, formData.party);
+            console.log("Send to backend is = ", rowData.ID, newStatus);
             await API.put(`/update-status/${rowData.ID}`, { status: newStatus });
             setRowData([]);
             resetFormData();
             // update temprory insted fetchDiamondStock
             setStocks(prev =>
                 prev.map(stock =>
-                    stock.ID === rowData.ID ? { ...stock, STATUS: newStatus, party: formData.party } : stock
+                    stock.ID === rowData.ID ? { ...stock, STATUS: newStatus } : stock
                 )
             );
             alert(`Status updated to ${newStatus}.`);
@@ -407,7 +390,7 @@ const StockData = () => {
     const handleSell = async () => {
         // required
         const requiredFields = [
-            { field: 'party', ref: partyRef, label: 'Party' },
+            // { field: 'party', ref: partyRef, label: 'Party' },
             { field: 'price', ref: priceRef, label: 'Price' },
             { field: 'finalprice', ref: finalPriceRef, label: 'Final Price' },
             { field: 'amountRs', ref: amountRsRef, label: 'Amount Rs' },
@@ -434,8 +417,8 @@ const StockData = () => {
                 drate: formData.drate,
                 amountRs: formData.amountRs,
                 status: "SOLD",
-                party: formData.party,
-                due: formData.due,
+                // party: formData.party,
+                // due: formData.due,
             };
             await API.post('/add-sell', sellPayload, { withCredentials: true });
             let deleteResponse = null;
@@ -485,7 +468,7 @@ const StockData = () => {
             drate: row.DOLLAR_RATE || '0',
             price: row.PRICE_PER_CARAT || '0',
             finalprice: row.FINAL_PRICE || '0',
-            due: row.DUE || ''
+            // due: row.DUE || ''
         });
     }, []);
 
@@ -824,8 +807,8 @@ const StockData = () => {
                                     <th>Final Price</th>
                                     <th>DRate</th>
                                     <th>Amount (Rs)</th>
-                                    <th>Party</th>
-                                    <th>Due</th>
+                                    {/* <th>Party</th> */}
+                                    {/* <th>Due</th> */}
                                 </tr>
                                 <tr>
                                     <td>
@@ -1038,7 +1021,7 @@ const StockData = () => {
                                             readOnly
                                         />
                                     </td>
-                                    <td>
+                                    {/* <td>
                                         <input
                                             onKeyDown={handleEnterAsTab}
                                             type="text"
@@ -1048,8 +1031,8 @@ const StockData = () => {
                                             onChange={handleChange}
                                             ref={partyRef}
                                         />
-                                    </td>
-                                    <td>
+                                    </td> */}
+                                    {/* <td>
                                         <input
                                             // onKeyDown={handleEnterAsTab}
                                             type="number"
@@ -1058,7 +1041,7 @@ const StockData = () => {
                                             value={formData.due}
                                             onChange={handleChange}
                                         />
-                                    </td>
+                                    </td> */}
                                     <td style={{ display: 'none' }}>
                                         <input type="submit" />
                                     </td>
