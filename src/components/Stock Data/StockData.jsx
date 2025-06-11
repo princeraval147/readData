@@ -388,22 +388,6 @@ const StockData = () => {
     }
 
     const handleSell = async () => {
-        // required
-        const requiredFields = [
-            // { field: 'party', ref: partyRef, label: 'Party' },
-            { field: 'price', ref: priceRef, label: 'Price' },
-            { field: 'finalprice', ref: finalPriceRef, label: 'Final Price' },
-            { field: 'amountRs', ref: amountRsRef, label: 'Amount Rs' },
-        ];
-
-        for (const { field, ref, label } of requiredFields) {
-            if (!formData[field]) {
-                alert(`Please enter ${label}.`);
-                setTimeout(() => ref?.current?.focus(), 100);
-                return;
-            }
-        }
-
         // setLoading(true); // Start loading
         setUpdating(true); // Start loading
         try {
