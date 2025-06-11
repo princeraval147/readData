@@ -99,6 +99,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false }) =
                                             style={{ cursor: 'pointer' }}
                                             onClick={() => onRowClick(row)}
                                         >
+                                            <TableCell>{(currentPage - 1) * rowsPerPage + rowIndex + 1}</TableCell>
                                             {headers.map((header, colIndex) => (
                                                 <TableCell key={colIndex}>
                                                     {/* {row[header]} */}
