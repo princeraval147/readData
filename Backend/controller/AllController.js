@@ -12,14 +12,14 @@ exports.register = async (req, res) => {
 
     // Step 1: Check if email already exists
     try {
-        const checkQuery = 'SELECT * FROM USERS WHERE EMAIL = ?';
+        const checkQuery = 'SELECT * FROM users WHERE EMAIL = ?';
         const [existingUsers] = await pool.query(checkQuery, [email]);
         if (existingUsers.length > 0) {
             return res.status(409).json({ message: 'Email already exists' });
         }
 
         // Step 2: Insert user if email not found
-        const insertQuery = 'INSERT INTO USERS (USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?)';
+        const insertQuery = 'INSERT INTO users (USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?)';
         const [insertResult] = await pool.query(insertQuery, [username, email, password]);
         const userId = insertResult.insertId;
 
@@ -73,7 +73,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
         // 1. Find user
-        const [users] = await pool.query('SELECT * FROM USERS WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
+        const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
 
         if (users.length === 0) {
             return res.status(401).json({ message: 'Invalid email or password' });
@@ -196,7 +196,7 @@ exports.login = async (req, res) => {
 // GLobarl
 exports.getShape = async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT * FROM SHAPE ORDER BY SID");
+        const [rows] = await pool.query("SELECT * FROM shape ORDER BY SID");
         res.status(200).json(rows);
     } catch (error) {
         console.error("DB error : ", error);
@@ -206,7 +206,7 @@ exports.getShape = async (req, res) => {
 
 exports.getCut = async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT * FROM CUT ORDER BY CID");
+        const [rows] = await pool.query("SELECT * FROM cut ORDER BY CID");
         res.status(200).json(rows);
     } catch (error) {
         console.error("DB error : ", error);

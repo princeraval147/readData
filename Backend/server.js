@@ -79,13 +79,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const [users] = await pool.query('SELECT * FROM USERS WHERE EMAIL = ?', [email]);
+        const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ?', [email]);
 
         if (users.length === 0) {
             return res.status(404).json({ message: 'Email not found' });
         }
 
-        await pool.query('UPDATE USERS SET PASSWORD = ? WHERE EMAIL = ?', [password, email]);
+        await pool.query('UPDATE users SET PASSWORD = ? WHERE EMAIL = ?', [password, email]);
 
         // Ideally, hash password before storing — not shown here
         res.json({ message: 'Password reset' });
