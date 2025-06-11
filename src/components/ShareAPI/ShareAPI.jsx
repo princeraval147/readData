@@ -28,9 +28,10 @@ const ShareAPI = () => {
 
     const handleChange = (e) => {
         const { id, value } = e.target;
+        const newValue = id === "email" ? value.toLowerCase() : value;
         setFormData(prev => ({
             ...prev,
-            [id]: value
+            [id]: newValue
         }));
     };
 
