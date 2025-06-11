@@ -334,12 +334,11 @@ exports.uploadExcel = async (req, res) => {
 
     const parseNumeric = (value) => {
         if (typeof value === 'string') {
-            value = value.replace('%', '').replace(',', '.').trim();
+            value = value.replace(/[^0-9.\-]/g, '').trim(); // remove commas, %, etc.
         }
         const num = parseFloat(value);
-        return isNaN(num) ? null : num;
+        return isNaN(num) ? null : num; // DO NOT return ''
     };
-
 
     try {
         // Get list of valid column names from the 'stocks' table
@@ -383,23 +382,25 @@ exports.uploadExcel = async (req, res) => {
         const values = data.map(item => [
             userId,
             item["KAPAN"] || '', item["PACKET"] || '', item["TAG"] || '', item["STOCKID"] || '',
-            item["SHAPE"] || '', item["WEIGHT"], item["COLOR"] || '', item["CLARITY"] || '',
+            item["SHAPE"] || '', parseNumeric(item["WEIGHT"]), item["COLOR"] || '', item["CLARITY"] || '',
             item["CUT"] || '', item["POLISH"] || '', item["SYMMETRY"] || '', item["FLUORESCENCE"] || '',
-            item["LENGTH"], item["WIDTH"], item["HEIGHT"], item["SHADE"] || '',
+            parseNumeric(item["LENGTH"]), parseNumeric(item["WIDTH"]), parseNumeric(item["HEIGHT"]), item["SHADE"] || '',
             item["MILKY"] || '', item["EYE_CLEAN"] || '', item["LAB"] || '', item["CERTIFICATE_COMMENT"] || '',
             item["REPORT_NO"] || '', item["CITY"] || '', item["STATE"] || '', item["COUNTRY"] || '',
-            item["TREATMENT"] || '', item["DEPTH_PERCENT"], item["TABLE_PERCENT"], item["DIAMOND_VIDEO"] || '',
-            item["DIAMOND_IMAGE"] || '', item["RAP_PER_CARAT"], item["PRICE_PER_CARAT"], item["RAP_PRICE"],
-            item["DISCOUNT"], item["FINAL_PRICE"], item["HEART_ARROW"] || '', item["STAR_LENGTH"] || '',
-            item["LASER_DESCRIPTION"] || '', item["GROWTH_TYPE"] || '', item["KEY_TO_SYMBOL"] || '', item["LW_RATIO"],
-            item["CULET_SIZE"], item["CULET_CONDITION"] || '', item["GIRDLE_THIN"] || '', item["GIRDLE_THICK"] || '',
-            item["GIRDLE_CONDITION"] || '', item["GIRDLE_PER"] || '', item["CERTIFICATE_IMAGE"] || '', item["FLUORESCENCE_COLOR"] || '',
-            item["ADMIN_ID"] || '', item["STATUS"] || 'AVAILABLE', item["DIAMOND_TYPE"] || '', item["IS_ACTIVE"] || '',
+            item["TREATMENT"] || '', parseNumeric(item["DEPTH_PERCENT"]), parseNumeric(item["TABLE_PERCENT"]), item["DIAMOND_VIDEO"] || '',
+            item["DIAMOND_IMAGE"] || '', parseNumeric(item["RAP_PER_CARAT"]), parseNumeric(item["PRICE_PER_CARAT"]),
+            parseNumeric(item["RAP_PRICE"]), parseNumeric(item["DISCOUNT"]), parseNumeric(item["FINAL_PRICE"]),
+            item["HEART_ARROW"] || '', item["STAR_LENGTH"] || '', item["LASER_DESCRIPTION"] || '', item["GROWTH_TYPE"] || '',
+            item["KEY_TO_SYMBOL"] || '', parseNumeric(item["LW_RATIO"]), parseNumeric(item["CULET_SIZE"]),
+            item["CULET_CONDITION"] || '', item["GIRDLE_THIN"] || '', item["GIRDLE_THICK"] || '',
+            item["GIRDLE_CONDITION"] || '', item["GIRDLE_PER"] || '', item["CERTIFICATE_IMAGE"] || '',
+            item["FLUORESCENCE_COLOR"] || '', item["ADMIN_ID"] || '', item["STATUS"] || 'AVAILABLE', item["DIAMOND_TYPE"] || '', item["IS_ACTIVE"] || '',
             item["BGM"] || '', item["NO_BGM"] || '', item["TINGE"] || '', item["FANCY_COLOR"] || '',
             item["FANCY_COLOR_INTENSITY"] || '', item["FANCY_COLOR_OVERTONE"] || '', item["CERTIFICATE_NUMBER"] || '',
             item["CROWN_HEIGHT"] || '', item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || ''
         ]);
         // console.log('Column Count:', values[0].length);
+        console.log("Depth percentage = ", values[0]);
 
         const [result] = await pool.query(insertQuery, [values]);
         res.json({ message: `Inserted ${result.affectedRows} rows` });
