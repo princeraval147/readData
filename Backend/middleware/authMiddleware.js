@@ -10,7 +10,7 @@ const authenticateToken = async (req, res, next) => {
         return res.status(401).json({ message: 'Token missing' });
     }
 
-    const query = 'SELECT user_id FROM tokens WHERE token = ?';
+    const query = 'SELECT USER_ID FROM tokens WHERE TOKEN = ?';
 
     try {
         const [result] = await pool.query(query, [token]);
