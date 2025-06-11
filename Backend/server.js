@@ -10,6 +10,22 @@ const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 5000;
 require('dotenv').config();
 
+// app.use(cors());
+const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
+    })
+);
+
+
 // ✅ MySQL connection 
 db.connect((err) => {
     if (err) {
@@ -29,21 +45,7 @@ pool.query('SELECT 1')
     });
 
 
-// app.use(cors());
-const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
 
-app.use(
-    cors({
-        origin: function (origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        credentials: true,
-    })
-);
 // app.use(
 //     cors({
 //         origin: process.env.CLIENT_ORIGIN, // frontend URL
