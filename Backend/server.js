@@ -32,29 +32,9 @@ pool.query('SELECT 1')
 
 
 const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
-// ✅ CORS via custom middleware (production-safe)
-// Perfect working
-// app.use((req, res, next) => {
-//     const origin = req.headers.origin;
-//     console.log("🌐 Incoming request origin:", origin);
-
-//     if (!origin || allowedOrigins.includes(origin)) {
-//         res.setHeader("Access-Control-Allow-Origin", origin);
-//         res.setHeader("Access-Control-Allow-Credentials", "true");
-//         res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-//         res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-//     }
-//     // ✅ Handle preflight (important behind NGINX)
-//     if (req.method === 'OPTIONS') {
-//         return res.sendStatus(200);
-//     }
-
-//     next();
-// });
-
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    console.log("🌐 Incoming request origin:", origin);
+    // console.log("🌐 Incoming request origin:", origin);
 
     if (origin && allowedOrigins.includes(origin)) {
         res.setHeader("Access-Control-Allow-Origin", origin);
