@@ -30,87 +30,52 @@ pool.query('SELECT 1')
         console.error('MySQL pool connection error:', err);
     });
 
-const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
 
+const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
 // ✅ CORS via custom middleware (production-safe)
+// Perfect working
+// app.use((req, res, next) => {
+//     const origin = req.headers.origin;
+//     console.log("🌐 Incoming request origin:", origin);
+
+//     if (!origin || allowedOrigins.includes(origin)) {
+//         res.setHeader("Access-Control-Allow-Origin", origin);
+//         res.setHeader("Access-Control-Allow-Credentials", "true");
+//         res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+//         res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+//     }
+//     // ✅ Handle preflight (important behind NGINX)
+//     if (req.method === 'OPTIONS') {
+//         return res.sendStatus(200);
+//     }
+
+//     next();
+// });
+
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     console.log("🌐 Incoming request origin:", origin);
 
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (origin && allowedOrigins.includes(origin)) {
         res.setHeader("Access-Control-Allow-Origin", origin);
         res.setHeader("Access-Control-Allow-Credentials", "true");
         res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     }
 
-    // ✅ Handle preflight (important behind NGINX)
+    // ✅ Handle preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
 
     next();
 });
-// Not working
-// app.use(cors());
-// const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
-// app.use(cors({
-//     origin: function (origin, callback) {
-//         if (!origin || allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error('Not allowed by CORS'));
-//         }
-//     },
-//     credentials: true,
-//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//     allowedHeaders: ['Content-Type', 'Authorization'],
-// }));
 
-// // 👇 Optional, but good to handle preflight requests quickly
-// app.options('*', cors());
-// Working :
-// app.use((req, res, next) => {
-//     const origin = req.headers.origin;
-//     console.log("Incoming request origin:", origin); // ✅ Keep this
-//     if (allowedOrigins.includes(origin)) {
-//         res.setHeader("Access-Control-Allow-Origin", origin);
-//         res.setHeader("Access-Control-Allow-Credentials", "true");
-//         res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-//         res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-//     }
-//     if (req.method === 'OPTIONS') {
-//         return res.sendStatus(200);
-//     }
-//     next();
-// });
-// app.use(
-//     cors({
-//         origin: function (origin, callback) {
-//             if (!origin || allowedOrigins.includes(origin)) {
-//                 callback(null, true);
-//             } else {
-//                 callback(new Error('Not allowed by CORS'));
-//             }
-//         },
-//         credentials: true,
-//     })
-// );
 
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 
-
-
-
-
-// app.use(
-//     cors({
-//         origin: process.env.CLIENT_ORIGIN, // frontend URL
-//         credentials: true,               // <== allow cookies
-//     })
-// );
 
 // app.use(express.json());
 

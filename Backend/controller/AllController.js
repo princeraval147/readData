@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const transporter = require('../config/mailer');
 const generateToken = require('../utils/generateToken');
-const token = generateToken(16);
+const token = generateToken();
 
 // user
 exports.register = async (req, res) => {
