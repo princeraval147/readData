@@ -18,6 +18,7 @@ const {
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
 
+// share API Stock
 router.get("/api/diamond-stock", authenticateHeader, apiDiamondStock);
 
 // user register/login

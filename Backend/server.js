@@ -12,18 +12,31 @@ require('dotenv').config();
 
 // app.use(cors());
 const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
-app.use(
-    cors({
-        origin: function (origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        credentials: true,
-    })
-);
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
+// app.use(
+//     cors({
+//         origin: function (origin, callback) {
+//             if (!origin || allowedOrigins.includes(origin)) {
+//                 callback(null, true);
+//             } else {
+//                 callback(new Error('Not allowed by CORS'));
+//             }
+//         },
+//         credentials: true,
+//     })
+// );
+
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 
 // ✅ MySQL connection 
@@ -54,8 +67,7 @@ pool.query('SELECT 1')
 // );
 
 // app.use(express.json());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 app.use(cookieParser());
 app.use(allRoutes);
 // Handle uncaught errors as JSON

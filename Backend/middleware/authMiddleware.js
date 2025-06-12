@@ -5,7 +5,6 @@ const authenticateToken = async (req, res, next) => {
     // const authHeader = req.headers['authorization'];
     // const token = authHeader && authHeader.split(' ')[1];
     const token = req.cookies.token; // <-- 🔁 Changed from headers to cookies
-
     if (!token) {
         return res.status(401).json({ message: 'Token missing' });
     }
@@ -16,7 +15,7 @@ const authenticateToken = async (req, res, next) => {
         const [result] = await pool.query(query, [token]);
         if (result.length === 0) return res.status(403).json({ message: 'Invalid token' });
 
-        req.user = { id: result[0].user_id };
+        req.user = { id: result[0].USER_ID };
         next();
     } catch (error) {
         console.error("DB error : ", error);

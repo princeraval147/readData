@@ -400,7 +400,6 @@ exports.uploadExcel = async (req, res) => {
             item["CROWN_HEIGHT"] || '', item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || ''
         ]);
         // console.log('Column Count:', values[0].length);
-        console.log("Depth percentage = ", values[0]);
 
         const [result] = await pool.query(insertQuery, [values]);
         res.json({ message: `Inserted ${result.affectedRows} rows` });
