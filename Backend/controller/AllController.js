@@ -71,6 +71,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     const { email, password } = req.body;
+    console.log("Login with : ", email);
     try {
         // 1. Find user
         const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
@@ -80,6 +81,7 @@ exports.login = async (req, res) => {
         }
 
         const user = users[0];
+        console.log("Login user Data = ", user);
 
         if (!user.ISAPPROVED) {
             return res.status(403).json({ message: 'You are not approved by admin yet' });
@@ -327,7 +329,7 @@ exports.addSell = async (req, res) => {
 exports.uploadExcel = async (req, res) => {
     const data = req.body;
     const userId = req.user.id;
-    // console.log(data[0]);
+    console.log("console from uploadExcel user id = ", userId);
     if (!Array.isArray(data) || data.length === 0) {
         return res.status(400).json({ message: 'No data received' });
     }

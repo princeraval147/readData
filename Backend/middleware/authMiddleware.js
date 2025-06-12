@@ -8,6 +8,7 @@ const authenticateToken = async (req, res, next) => {
     if (!token) {
         return res.status(401).json({ message: 'Token missing' });
     }
+    console.log("Console from authMiddleware ", token)
 
     const query = 'SELECT USER_ID FROM tokens WHERE TOKEN = ?';
 
@@ -16,6 +17,8 @@ const authenticateToken = async (req, res, next) => {
         if (result.length === 0) return res.status(403).json({ message: 'Invalid token' });
 
         req.user = { id: result[0].USER_ID };
+        console.log("Console from authMiddleware ", req.user);
+
         next();
     } catch (error) {
         console.error("DB error : ", error);
