@@ -21,10 +21,22 @@ const Login = () => {
         password: "",
     });
 
+    const [resetData, setResetData] = useState({
+        email: "",
+        password: "",
+    });
+
     // Handle input change
+    // const handleChange = (e, setState) => {
+    //     setState((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    // };
+
     const handleChange = (e, setState) => {
-        setState((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        const newValue = name === "email" ? value.toLowerCase() : value;
+        setState((prev) => ({ ...prev, [name]: newValue }));
     };
+
 
 
     // Handle Signup Submission
@@ -172,8 +184,8 @@ const Login = () => {
                             type="email"
                             name="email"
                             placeholder="Email"
-                            // value={resetData.email}
-                            // onChange={(e) => handleChange(e, setResetData)}
+                            value={resetData.email}
+                            onChange={(e) => handleChange(e, setResetData)}
                             className={styles.inputText}
                             required
                         />
@@ -181,8 +193,8 @@ const Login = () => {
                             type="password"
                             name="password"
                             placeholder="password"
-                            // value={resetData.email}
-                            // onChange={(e) => handleChange(e, setResetData)}
+                            value={resetData.password}
+                            onChange={(e) => handleChange(e, setResetData)}
                             className={styles.inputText}
                             required
                         />
