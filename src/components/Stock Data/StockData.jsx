@@ -55,50 +55,47 @@ const StockData = () => {
         }
     }
 
-    // const handleImportExcel = (e) => {
-    //     setLoading(true);
-    //     const file = e.target.files[0];
-    //     const reader = new FileReader();
-
-    //     reader.onload = (evt) => {
-    //         const data = new Uint8Array(evt.target.result);
-    //         const workbook = XLSX.read(data, { type: 'array' });
-    //         const firstSheetName = workbook.SheetNames[0];
-    //         const worksheet = workbook.Sheets[firstSheetName];
-    //         const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-    //         setLoading(false);
-    //         setError(null);
-    //         setStocks(jsonData); // Replace existing data
-    //     };
-
-    //     if (file) reader.readAsArrayBuffer(file);
-    // };
-
     // handle excel data 
     const [excelData, setExcelData] = useState([]);
 
     const headerMapping = {
-        'STOCK_': 'STOCK',
+        'STOCK_': 'STOCKID',
+        'STOCK': 'STOCKID',
+        'CUSTOMER_REF_NO': 'STOCKID',
         'REPORT_': 'REPORT_NO',
         'TABLE_': 'TABLE_PERCENT',
         'DEPTH_': 'DEPTH_PERCENT',
         'PRICE_PER_CARAT': 'PRICE_PER_CARAT',
+        'PRICE': 'PRICE_PER_CARAT',
+        'TOTAL_PRICE': 'FINAL_PRICE',
         'EYE_CLEAN': 'EYE_CLEAN',
-        'FLUORESCENCE_INTENSITY': 'FLUORESCENCE_INTENSITY',
+        'FLUORESCENCE_INTENSITY': 'FLUORESCENCE',
         'DIAMOND_VIDEO': 'DIAMOND_VIDEO',
+        'VIDEO_LINK': 'DIAMOND_VIDEO',
         'DIAMOND_IMAGE': 'DIAMOND_IMAGE',
+        'IMAGE_LINK': 'DIAMOND_IMAGE',
+        'IMAGE_LINK_2': 'DIAMOND_IMAGE',
+        'IMAGE_LINK_3': 'DIAMOND_IMAGE',
+        'IMAGE_LINK_4': 'DIAMOND_IMAGE',
+        'IMAGE_LINK_5': 'DIAMOND_IMAGE',
+        'IMAGE_LINK_6': 'DIAMOND_IMAGE',
+        'CERTIFICATE_URL': 'CERTIFICATE_IMAGE',
+        'CERT_COMMENT': 'CERTIFICATE_COMMENT',
+        'TREATMENT': 'GROWTH_TYPE',
         'GROWTH_TYPE': 'GROWTH_TYPE',
-        'FANCY_COLOR_INTENSITY': 'FANCY_COLOR_INTENSITY',
         'FANCY_COLOR': 'FANCY_COLOR',
+        'FANCY_COLOR_INTENSITY': 'FANCY_COLOR_INTENSITY',
         // Measurement1	Measurement2	Measurement3	
         'MEASUREMENT1': 'LENGTH',
         'MEASUREMENT2': 'WIDTH',
         'MEASUREMENT3': 'HEIGHT',
+        'MEASUREMENTS_LENGTH': 'LENGTH',       //  Measurements Length
+        'MEASUREMENTS_DEPTH': 'HEIGHT', //  Measurements Depth
+        'MEASUREMENTS_WIDTH': 'WIDTH',       //  Measurements Width
         'TABLE': 'TABLE_PERCENT',
         'DEPTH': 'DEPTH_PERCENT',
         'SYM': 'SYMMETRY',
         'REPORT_NUMBER': 'REPORT_NO',
-        'CUSTOMER_REF_NO': 'STOCKID',
         'CULET_SIZE': 'CULET_SIZE',
         'GIRDLE_NAME': 'GIRDLE_CONDITION',
         'GIRDLE_PERCENT': 'GIRDLE_PER',
@@ -108,6 +105,8 @@ const StockData = () => {
         'COLOR_LONG': 'COLOR',
         'CUTDROP': 'CUT',
         'DOCUMENT_NO': 'CERTIFICATE_NUMBER',
+        'CERTIFICATE_': 'CERTIFICATE_NUMBER',
+        'LOCATION': 'CITY'
     };
 
     const validateExcelHeaders = (sheet) => {
@@ -123,6 +122,8 @@ const StockData = () => {
         return expectedHeaders.every(header => actualHeaders.includes(header));
     };
 
+    //  
+    // Working import file excel
     const handleImportExcel = (e) => {
         setLoading(true);
         const file = e.target.files[0];
@@ -138,7 +139,7 @@ const StockData = () => {
             if (!validateExcelHeaders(worksheet)) {
                 setLoading(false);
                 setError("Invalid Excel format.");
-                console.log("Invalid Excel format. Expected columns: Weight, Clarity, Cut");
+                console.log("Invalid Excel format. Expected columns: Weight, Clarity");
                 setExcelData([]);
                 return;
             }
@@ -156,20 +157,6 @@ const StockData = () => {
 
 
     // export to excel
-    // raval
-    // const exportToExcel = () => {
-    //     const worksheet = XLSX.utils.json_to_sheet(stocks);
-    //     const workbook = XLSX.utils.book_new();
-    //     XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-
-    //     const excelBuffer = XLSX.write(workbook, {
-    //         bookType: "xlsx",
-    //         type: "array",
-    //     });
-
-    //     const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-    //     saveAs(data, "diamond_stock.xlsx");
-    // };
     const [tableExportData, setTableExportData] = useState({ headers: [], rows: [] });
     const exportToExcel = () => {
         const fallbackHeaders = [
@@ -202,34 +189,6 @@ const StockData = () => {
 
 
 
-    // const exportToExcel = () => {
-    //     // Match table source
-    //     const dataToExport = excelData.length > 0 ? excelData : (filteredData.length > 0 ? filteredData : stocks);
-
-    //     if (!dataToExport || dataToExport.length === 0) {
-    //         // Only headers if no data
-    //         const headers = Object.keys(stocks[0] || {}); // fallback headers from full data
-    //         const worksheet = XLSX.utils.aoa_to_sheet([headers]);
-    //         const workbook = XLSX.utils.book_new();
-    //         XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-    //         XLSX.writeFile(workbook, "diamond_stock.xlsx");
-    //         return;
-    //     }
-
-    //     console.log(dataToExport);
-
-    //     // Convert visible table data to sheet
-    //     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    //     const workbook = XLSX.utils.book_new();
-    //     XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-
-    //     XLSX.writeFile(workbook, "diamond_stock.xlsx");
-    // };
-
-
-
-
-
     // Send to DB
     function normalizeObjectKeys(data) {
         return data.map(obj => {
@@ -241,8 +200,24 @@ const StockData = () => {
                     .replace(/[^a-zA-Z0-9_]/g, '')
                     .toUpperCase();
                 const dbKey = headerMapping[cleanedKey] || cleanedKey;
+                if (dbKey === 'AVAILABILITY') {
+                    const availability = (value || '').toString().trim().toUpperCase();
+                    if (availability === 'YES' || availability === 'G') normalized['STATUS'] = 'AVAILABLE';
+                    else if (availability === 'SOLD') normalized['STATUS'] = 'SOLD';
+                    else if (availability === 'HOLD') normalized['STATUS'] = 'HOLD';
+                }
                 normalized[dbKey] = value ?? '';
             });
+
+            // 👇 Add KAPAN, PACKET, TAG from STOCKID
+            const stockId = normalized['STOCKID'];
+            if (typeof stockId === 'string' && stockId.includes('-')) {
+                const [kapan, packet, tag = 'A'] = stockId.split('-');
+                normalized['KAPAN'] = kapan || '';
+                normalized['PACKET'] = packet || '';
+                normalized['TAG'] = tag || 'A';
+            }
+
             return normalized;
         });
     }
@@ -515,22 +490,11 @@ const StockData = () => {
 
 
     // Search Filter
-    const shapeMap = {
-        RD: "ROUND",
-        "PR": "PEAR",
-        PN: "PRINCESS",
-        CU: "CUSHION",
-        EM: "EMERALD",
-        MQ: "MARQUISE",
-        HT: "HEART",
-        OV: "OVAL",
-        RAD: "RADIANT",
-        TRE: "TRILLIANT",
-    };
     const [filters, setFilters] = useState({
         shape: '',
         color: '',
         clarity: '',
+        stockID: '',
     });
     const [weightMin, setWeightMin] = useState(0);
     const [weightMax, setWeightMax] = useState(25);
@@ -553,7 +517,6 @@ const StockData = () => {
         return map[cleaned] || cleaned;
     };
 
-
     const handleSearch = () => {
         setError(null);
         // const min = parseFloat(filters.weightMin) || 0;
@@ -566,6 +529,9 @@ const StockData = () => {
             const rawWeight = stock.WEIGHT?.toString().replace(',', '.').trim();
             const weight = parseFloat(rawWeight) || 0;
             const withinWeight = weight >= min && weight <= max;
+            const matchesStockID =
+                !filters.stockID ||
+                stock.STOCKID?.toLowerCase().includes(filters.stockID.toLowerCase());
             const matchesColor = !filters.color || stock.COLOR === filters.color;
             const matchesClarity = !filters.clarity || normalize(stock.CLARITY) === normalize(filters.clarity);
             // const matchesShape = !filters.shape || getShapeKey(stock.SHAPE) === getShapeKey(filters.shape);
@@ -574,7 +540,7 @@ const StockData = () => {
             const matchesShape = !filters.shape || normalizeShape(stock.SHAPE) === normalizeShape(filters.shape);
 
 
-            return withinWeight && matchesColor && matchesClarity && matchesShape;
+            return withinWeight && matchesStockID && matchesColor && matchesClarity && matchesShape;
         });
 
         if (filters.shape || filters.color || filters.clarity || weightMin !== 0 || weightMax !== 25) {
@@ -592,7 +558,7 @@ const StockData = () => {
     };
 
     const resetFilter = async () => {
-        setFilters({ color: '', clarity: '', shape: '' });
+        setFilters({ color: '', clarity: '', shape: '', stockID: '' });
         setWeightMin(0);
         setWeightMax(25);
         setWeightRange([0, 25]);
@@ -626,7 +592,7 @@ const StockData = () => {
                         <label htmlFor="import-excel">
                             <input
                                 type="file"
-                                accept=".xlsx, .xls"
+                                accept=".xlsx, .xls, .csv"
                                 id="import-excel"
                                 onChange={handleImportExcel}
                                 style={{ display: 'none' }}
@@ -658,7 +624,7 @@ const StockData = () => {
                             onClick={uploadData}
                             disabled={excelData.length === 0}
                         >
-                            Upload to DB
+                            Upload to Stock
                         </Button>
 
                         <Button
@@ -757,6 +723,19 @@ const StockData = () => {
                         </Box>
                     </Box>
 
+                    {/* Stockid filter */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField
+                            label="Stock ID"
+                            size="small"
+                            value={filters.stockID}
+                            onChange={(e) =>
+                                setFilters((prev) => ({ ...prev, stockID: e.target.value }))
+                            }
+                        />
+                    </Box>
+
+
                     {/* Shape Filter */}
                     <FormControl size="small" sx={{ minWidth: 120 }}>
                         <InputLabel>Shape</InputLabel>
@@ -773,7 +752,7 @@ const StockData = () => {
                     </FormControl>
 
                     {/* Color Filter */}
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                    {/* <FormControl size="small" sx={{ minWidth: 120 }}>
                         <InputLabel>Color</InputLabel>
                         <Select
                             value={filters.color}
@@ -785,7 +764,7 @@ const StockData = () => {
                                 <MenuItem key={color.CID} value={color.COLOR}>{color.COLOR}</MenuItem>
                             ))}
                         </Select>
-                    </FormControl>
+                    </FormControl> */}
 
                     {/* Clarity Filter */}
                     <FormControl size="small" sx={{ minWidth: 120 }}>

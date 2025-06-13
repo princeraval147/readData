@@ -11,11 +11,10 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
     const rowsPerPage = 50;
 
     const headersToShow = [
-        "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT",
+        "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT", "FANCY_COLOR", "FANCY_COLOR_INTENSITY",
         "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
-        "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN",
-        "LAB", "CERTIFICATE_COMMENT", "CITY", "STATE", "COUNTRY",
-        "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
+        "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN", "LAB", "CERTIFICATE_COMMENT",
+        "REPORT_NO", "CITY", "STATE", "COUNTRY", "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
         "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DOLLAR_RATE", "RS_AMOUNT", "DISCOUNT", "FINAL_PRICE",
         "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
         "BGM", "NO_BGM", "CERTIFICATE_NUMBER", "PARTY", "DUE"
@@ -61,6 +60,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
             "BGM", "NO_BGM", "CERTIFICATE_NUMBER", "PARTY", "DUE"
         ];
 
+
         if (onProcessedData) {
             if (stocks.length === 0) {
                 // Send only fallback headers and empty row
@@ -104,12 +104,11 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
 
     return (
         <>
-            {/* <TableContainer component={Paper} sx={{ maxHeight: 480, overflow: 'auto' }}> */}
             {
                 stocks.length !== 0 &&
                 (
                     <>
-                        <TableContainer component={Paper}>
+                        <TableContainer component={Paper} sx={{ maxHeight: 580 }}>
                             <Table>
                                 <TableHead>
                                     <TableRow
@@ -145,8 +144,12 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
                                             <TableCell>{(currentPage - 1) * rowsPerPage + rowIndex + 1}</TableCell>
                                             {headers.map((header, colIndex) => (
                                                 <TableCell key={colIndex}>
-                                                    {/* {row[header]} */}
-                                                    {row[header] ?? "-"}
+                                                    {
+                                                        typeof row[header] === "number"
+                                                            ? row[header].toFixed(2)
+                                                            : row[header]
+                                                    }
+                                                    {/* {row[header] ?? "-"} */}
                                                 </TableCell>
                                             ))}
                                         </TableRow>
