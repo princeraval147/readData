@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 
 
-const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false }) => {
+const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onProcessedData }) => {
 
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 50;
@@ -48,14 +48,54 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false }) =
         setCurrentPage(value);
     };
 
+
     useEffect(() => {
-        if (stocks.length > 0) {
-            const missingHeaders = headersToShow.filter(h => !Object.keys(stocks[0]).includes(h));
-            if (missingHeaders.length > 0) {
-                console.log("Missing headers in data:", missingHeaders);
+        const fallbackHeaders = [
+            "ID", "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT",
+            "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
+            "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN",
+            "LAB", "CERTIFICATE_COMMENT", "CITY", "STATE", "COUNTRY",
+            "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
+            "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DOLLAR_RATE", "RS_AMOUNT", "DISCOUNT", "FINAL_PRICE",
+            "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
+            "BGM", "NO_BGM", "CERTIFICATE_NUMBER", "PARTY", "DUE"
+        ];
+
+        if (onProcessedData) {
+            if (stocks.length === 0) {
+                // Send only fallback headers and empty row
+                onProcessedData({
+                    headers: fallbackHeaders,
+                    rows: []
+                });
+            } else {
+                const exportHeaders = ["ID", ...(headers.length > 0 ? headers : fallbackHeaders)];
+                // const exportHeaders = headers.length > 0 ? headers : fallbackHeaders;
+                const processed = stocks.map((row, index) => {
+                    const rowData = { ID: index + 1 }; // Add ID manually
+                    exportHeaders.forEach(h => {
+                        if (h !== "ID") {
+                            rowData[h] = row[h] ?? "";
+                        }
+                    });
+                    return rowData;
+                });
+
+                // const processed = stocks.map((row, index) => {
+                //     const rowData = {};
+                //     exportHeaders.forEach(h => {
+                //         rowData[h] = row[h] ?? "";
+                //     });
+                //     return rowData;
+                // });
+                onProcessedData({
+                    headers: exportHeaders,
+                    rows: processed
+                });
             }
         }
-    }, [stocks]);
+    }, [stocks, headers, onProcessedData]);
+
 
 
 

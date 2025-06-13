@@ -55,7 +55,6 @@ const StockData = () => {
         }
     }
 
-    // prince
     // const handleImportExcel = (e) => {
     //     setLoading(true);
     //     const file = e.target.files[0];
@@ -157,19 +156,79 @@ const StockData = () => {
 
 
     // export to excel
+    // raval
+    // const exportToExcel = () => {
+    //     const worksheet = XLSX.utils.json_to_sheet(stocks);
+    //     const workbook = XLSX.utils.book_new();
+    //     XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+
+    //     const excelBuffer = XLSX.write(workbook, {
+    //         bookType: "xlsx",
+    //         type: "array",
+    //     });
+
+    //     const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    //     saveAs(data, "diamond_stock.xlsx");
+    // };
+    const [tableExportData, setTableExportData] = useState({ headers: [], rows: [] });
     const exportToExcel = () => {
-        const worksheet = XLSX.utils.json_to_sheet(stocks);
+        const fallbackHeaders = [
+            "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT",
+            "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
+            "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN",
+            "LAB", "CERTIFICATE_COMMENT", "CITY", "STATE", "COUNTRY",
+            "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
+            "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DOLLAR_RATE", "RS_AMOUNT", "DISCOUNT", "FINAL_PRICE",
+            "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
+            "BGM", "NO_BGM", "CERTIFICATE_NUMBER", "PARTY", "DUE"
+        ];
+
+        const { headers, rows } = tableExportData;
+
+        const usedHeaders = headers.length > 0 ? headers : fallbackHeaders;
+
+        const exportData = rows.length > 0
+            ? rows
+            : [Object.fromEntries(usedHeaders.map(h => [h, ""]))];
+
+        // console.log("Exported Excel data = ", exportData);
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData, { header: usedHeaders });
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
 
-        const excelBuffer = XLSX.write(workbook, {
-            bookType: "xlsx",
-            type: "array",
-        });
-
-        const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "diamond_stock.xlsx");
+        XLSX.writeFile(workbook, "diamond_stock.xlsx");
     };
+
+
+
+    // const exportToExcel = () => {
+    //     // Match table source
+    //     const dataToExport = excelData.length > 0 ? excelData : (filteredData.length > 0 ? filteredData : stocks);
+
+    //     if (!dataToExport || dataToExport.length === 0) {
+    //         // Only headers if no data
+    //         const headers = Object.keys(stocks[0] || {}); // fallback headers from full data
+    //         const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    //         const workbook = XLSX.utils.book_new();
+    //         XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+    //         XLSX.writeFile(workbook, "diamond_stock.xlsx");
+    //         return;
+    //     }
+
+    //     console.log(dataToExport);
+
+    //     // Convert visible table data to sheet
+    //     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    //     const workbook = XLSX.utils.book_new();
+    //     XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+
+    //     XLSX.writeFile(workbook, "diamond_stock.xlsx");
+    // };
+
+
+
+
 
     // Send to DB
     function normalizeObjectKeys(data) {
@@ -324,7 +383,6 @@ const StockData = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // console.log("Form Data Submitted: ", formData);
         try {
             const response = await API.post('/add-diamondstock', formData, {
                 withCredentials: true
@@ -370,7 +428,6 @@ const StockData = () => {
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
             }
 
-            console.log("Send to backend is = ", rowData.ID, newStatus);
             await API.put(`/update-status/${rowData.ID}`, { status: newStatus });
             setRowData([]);
             resetFormData();
@@ -1094,6 +1151,7 @@ const StockData = () => {
                             showAllColumns={excelData.length > 0}
                             loading={loading}
                             onRowClick={handleRowClick}
+                            onProcessedData={setTableExportData}
                         />
                     )
                 }
