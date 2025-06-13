@@ -262,7 +262,6 @@ exports.addSell = async (req, res) => {
 exports.uploadExcel = async (req, res) => {
     const data = req.body;
     const userId = req.user.id;
-    console.log("console from uploadExcel user id = ", userId);
     if (!Array.isArray(data) || data.length === 0) {
         return res.status(400).json({ message: 'No data received' });
     }
@@ -304,7 +303,7 @@ exports.uploadExcel = async (req, res) => {
         INSERT INTO diamond_stock (
             USER_ID, KAPAN, PACKET, TAG, STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, 
             FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO,
-            CITY, STATE, COUNTRY, TREATMENT, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, 
+            CITY, STATE, COUNTRY, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, 
             RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT, FINAL_PRICE, HEART_ARROW, STAR_LENGTH, 
             LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO, CULET_SIZE, CULET_CONDITION, 
             GIRDLE_THIN, GIRDLE_THICK, GIRDLE_CONDITION, GIRDLE_PER, CERTIFICATE_IMAGE, 
@@ -322,7 +321,7 @@ exports.uploadExcel = async (req, res) => {
             parseNumeric(item["LENGTH"]), parseNumeric(item["WIDTH"]), parseNumeric(item["HEIGHT"]), item["SHADE"] || '',
             item["MILKY"] || '', item["EYE_CLEAN"] || '', item["LAB"] || '', item["CERTIFICATE_COMMENT"] || '',
             item["REPORT_NO"] || '', item["CITY"] || '', item["STATE"] || '', item["COUNTRY"] || '',
-            item["TREATMENT"] || '', parseNumeric(item["DEPTH_PERCENT"]), parseNumeric(item["TABLE_PERCENT"]), item["DIAMOND_VIDEO"] || '',
+            parseNumeric(item["DEPTH_PERCENT"]), parseNumeric(item["TABLE_PERCENT"]), item["DIAMOND_VIDEO"] || '',
             item["DIAMOND_IMAGE"] || '', parseNumeric(item["RAP_PER_CARAT"]), parseNumeric(item["PRICE_PER_CARAT"]),
             parseNumeric(item["RAP_PRICE"]), parseNumeric(item["DISCOUNT"]), parseNumeric(item["FINAL_PRICE"]),
             item["HEART_ARROW"] || '', item["STAR_LENGTH"] || '', item["LASER_DESCRIPTION"] || '', item["GROWTH_TYPE"] || '',
@@ -339,14 +338,6 @@ exports.uploadExcel = async (req, res) => {
         const [result] = await pool.query(insertQuery, [values]);
         res.json({ message: `Inserted ${result.affectedRows} rows` });
 
-
-        // db.query(insertQuery, [values], (err, result) => {
-        //     if (err) {
-        //         console.error('Insert error:', err);
-        //         return res.status(500).json({ message: 'DB insert failed' });
-        //     }
-        //     res.json({ message: `Inserted ${result.affectedRows} rows` });
-        // });
     } catch (error) {
         console.error("Upload error:", error);
         res.status(500).json({ message: "Internal server error" });
