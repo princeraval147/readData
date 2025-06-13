@@ -6,7 +6,7 @@ import Home from './components/Home/Home';
 import Login from './components/User/Login';
 import StockData from './components/Stock Data/StockData';
 import ShareAPI from './components/ShareAPI/ShareAPI';
-// import ProtectedRoute from './ProtectedRoute';
+import ProtectedRoute from './ProtectedRoute';
 
 const Router = createBrowserRouter(
     createRoutesFromElements(
@@ -14,10 +14,10 @@ const Router = createBrowserRouter(
             <Route index element={<Home />} />
             <Route path='login' element={<Login />} />
             <Route path='*' element={<Error />} />
-            {/* <Route element={<ProtectedRoute />}> */}
-            <Route path='stock-data' element={<StockData />} />
-            <Route path='share-api' element={<ShareAPI />} />
-            {/* </Route> */}
+            <Route element={<ProtectedRoute />}>
+                <Route path='stock-data' element={<StockData />} />
+                <Route path='share-api' element={<ShareAPI />} />
+            </Route>
         </Route>
     )
 )

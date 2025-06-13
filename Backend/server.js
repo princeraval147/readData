@@ -111,7 +111,7 @@ app.get('/api/auth/validate-token', async (req, res) => {
     // if (!authHeader) return res.status(401).json({ valid: false, message: 'No token provided' });
 
     // const token = authHeader.split(' ')[1]; // Expect "Bearer <token>"
-    if (!token) return res.status(401).json({ valid: false, message: 'Malformed token' });
+    if (!token) return res.status(401).json({ valid: false, message: 'Token is Missing' });
 
     // Check token in DB
     const query = 'SELECT * FROM tokens WHERE TOKEN = ?';
