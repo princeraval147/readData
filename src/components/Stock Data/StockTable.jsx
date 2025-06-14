@@ -11,7 +11,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
     const rowsPerPage = 50;
 
     const headersToShow = [
-        "KAPAN", "PACKET", "TAG", "STOCKID", "WEIGHT", "FANCY_COLOR", "FANCY_COLOR_INTENSITY",
+        "STOCKID", "WEIGHT", "FANCY_COLOR", "FANCY_COLOR_INTENSITY",
         "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
         "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN", "LAB", "CERTIFICATE_COMMENT",
         "REPORT_NO", "CITY", "STATE", "COUNTRY", "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",

@@ -14,6 +14,7 @@ import API from '../../API';
 const StockData = () => {
 
     const barcoderef = useRef(null);
+    const stockIdRef = useRef(null);
     // const partyRef = useRef(null);
     const priceRef = useRef(null);
     const finalPriceRef = useRef(null);
@@ -277,6 +278,7 @@ const StockData = () => {
     }, []);
 
     const [formData, setFormData] = useState({
+        stockId: '',
         barcode: '',
         kapan: '',
         lot: '',
@@ -301,6 +303,7 @@ const StockData = () => {
 
     const resetFormData = () => {
         setFormData({
+            stockId: '',
             barcode: '',
             kapan: '',
             lot: '',
@@ -543,7 +546,7 @@ const StockData = () => {
             return withinWeight && matchesStockID && matchesColor && matchesClarity && matchesShape;
         });
 
-        if (filters.shape || filters.color || filters.clarity || weightMin !== 0 || weightMax !== 25) {
+        if (filters.shape || filters.color || filters.clarity || filters.stockID || weightMin !== 0 || weightMax !== 25) {
             // Only show error if filters are applied
             if (result.length === 0) {
                 setError("No matching results found.");
@@ -730,7 +733,7 @@ const StockData = () => {
                             size="small"
                             value={filters.stockID}
                             onChange={(e) =>
-                                setFilters((prev) => ({ ...prev, stockID: e.target.value }))
+                                setFilters((prev) => ({ ...prev, stockID: e.target.value.toUpperCase() }))
                             }
                         />
                     </Box>
@@ -809,10 +812,11 @@ const StockData = () => {
                         <table className={styles.inputTable}>
                             <thead>
                                 <tr>
-                                    <th>Barcode</th>
-                                    <th>Kapan</th>
+                                    {/* <th>Barcode</th> */}
+                                    <th>Stock Id</th>
+                                    {/* <th>Kapan</th>
                                     <th>Lot</th>
-                                    <th>Tag</th>
+                                    <th>Tag</th> */}
                                     <th>Certificate</th>
                                     <th>Weight</th>
                                     <th>Shape</th>
@@ -831,7 +835,7 @@ const StockData = () => {
                                     {/* <th>Due</th> */}
                                 </tr>
                                 <tr>
-                                    <td>
+                                    {/* <td>
                                         <input
                                             onKeyDown={handleEnterAsTab}
                                             type="text"
@@ -841,8 +845,19 @@ const StockData = () => {
                                             onChange={handleChange}
                                             ref={barcoderef}
                                         />
-                                    </td>
+                                    </td> */}
                                     <td>
+                                        <input
+                                            onKeyDown={handleEnterAsTab}
+                                            type="text"
+                                            name="stockId"
+                                            placeholder='Stock Id'
+                                            value={formData.stockId}
+                                            onChange={handleChange}
+                                            ref={stockIdRef}
+                                        />
+                                    </td>
+                                    {/* <td>
                                         <input
                                             onKeyDown={handleEnterAsTab}
                                             type="text"
@@ -871,7 +886,7 @@ const StockData = () => {
                                             value={formData.tag}
                                             onChange={handleChange}
                                         />
-                                    </td>
+                                    </td> */}
                                     <td>
                                         <input
                                             onKeyDown={handleEnterAsTab}
@@ -1030,7 +1045,7 @@ const StockData = () => {
                                     </td>
                                     <td>
                                         <input
-                                            onKeyDown={handleEnterAsTab}
+                                            // onKeyDown={handleEnterAsTab}
                                             type="number"
                                             step="any"
                                             name="amountRs"
@@ -1038,7 +1053,6 @@ const StockData = () => {
                                             value={formData.amountRs}
                                             onChange={handleChange}
                                             ref={amountRsRef}
-                                            readOnly
                                         />
                                     </td>
                                     {/* <td>

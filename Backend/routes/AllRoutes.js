@@ -18,8 +18,6 @@ const {
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
 
-// share API Stock
-router.get("/api/diamond-stock", authenticateHeader, apiDiamondStock);
 
 // user register/login
 router.post("/api/auth/register", register);
@@ -44,6 +42,10 @@ router.post("/api/add-sell", addSell);
 // Share API
 router.post("/api/share-api", authenticateToken, shareApi);
 router.get("/api/shared-api-data", authenticateToken, SharedAPI);
+
+// share API Stock
+router.get("/api/diamond-stock", authenticateHeader, apiDiamondStock);
+
 
 
 module.exports = router;

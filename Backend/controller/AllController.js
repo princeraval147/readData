@@ -184,17 +184,18 @@ exports.getFL = async (req, res) => {
 exports.addDiamondStock = async (req, res) => {
     const userId = req.user.id;
     const {
-        barcode, kapan, lot, tag, certificate, weight,
+        // barcode, kapan, lot, tag, 
+        stockId, certificate, weight,
         shape, color, clarity, cut, pol, sym, length,
-        width, price, drate, amountRs, finalprice, due
+        width, price, drate, amountRs, finalprice
     } = req.body;
     const query = `INSERT INTO diamond_stock 
-        (USER_ID, BARCODE, KAPAN, PACKET, TAG, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE STATUS)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (USER_ID, STOCKID, CERTIFICATE_NUMBER, WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY, LENGTH, WIDTH, PRICE_PER_CARAT, DOLLAR_RATE, RS_AMOUNT, FINAL_PRICE, STATUS)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
     try {
         const [rows] = await pool.query(query, [
-            userId, barcode, kapan, lot, tag, certificate, weight,
+            userId, stockId, certificate, weight,
             shape, color, clarity, cut, pol, sym, length, width, price,
             drate, amountRs, finalprice, 'AVAILABLE'
         ]);
@@ -359,14 +360,14 @@ exports.getDiamondStock = async (req, res) => {
 exports.apiDiamondStock = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
-        return res.status(400).json({ message: 'User ID missing in token' });
+        return res.status(400).json({ message: 'User ID missing' });
     }
     const query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
     try {
         const [results] = await pool.query(query, [userId]);
         res.json(results);
     } catch (err) {
-        console.error('Error fetching API data ś:', err);
+        console.error('Error fetching API data :', err);
         res.status(500).json({ message: 'Error fetching API data' });
     }
 }
@@ -376,15 +377,27 @@ const ApiShareData = require('../models/apiShareData');
 const ShareAPI = require('../config/shareAPIEmail');
 // const { useId } = require('react');
 exports.shareApi = async (req, res) => {
-    const { name, email } = req.body;
+    const { name, email, difference } = req.body;
     const token = req.cookies.token;
     const userId = req.user.id;
 
     if (!email || !name) return res.status(400).json({ message: 'Email and name are required' });
     if (!token) return res.status(401).json({ message: 'Authentication token missing' });
 
+    // If difference === "1", fetch user's diamond stock and update price
+    if (difference === "1") {
+        const stockQuery = 'SELECT * FROM diamond_stock WHERE USER_ID = ?';
+        const [stock] = await pool.query(stockQuery, [userId]);
+
+        for (const item of stock) {
+            const updatedPrice = (item.PRICE_PER_CARAT * 1.01).toFixed(2);
+            const updateQuery = 'UPDATE diamond_stock SET PRICE_PER_CARAT = ? WHERE ID = ?';
+            await pool.query(updateQuery, [updatedPrice, item.ID]);
+        }
+    }
+
     try {
-        ShareAPI({ name, email, token });
+        // ShareAPI({ name, email, token });
         res.json({ message: 'Email sent successfully!' });
 
         // Store in DB api_shares table 
