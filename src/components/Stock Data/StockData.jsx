@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import Axios from 'axios';
 import * as XLSX from 'xlsx';
@@ -7,7 +7,7 @@ import styles from './StockData.module.css';
 import StockTable from './StockTable';
 import CircularProgress from '@mui/material/CircularProgress';
 import Slider from '@mui/material/Slider';
-import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, TextField, Stack } from '@mui/material';
+import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, TextField, Stack, Autocomplete, Chip, Snackbar, Alert } from '@mui/material';
 import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart, CheckCircle, Newspaper } from '@mui/icons-material';
 import API from '../../API';
 
@@ -498,6 +498,7 @@ const StockData = () => {
         color: '',
         clarity: '',
         stockID: '',
+        certificate: ''
     });
     const [weightMin, setWeightMin] = useState(0);
     const [weightMax, setWeightMax] = useState(25);
@@ -520,6 +521,19 @@ const StockData = () => {
         return map[cleaned] || cleaned;
     };
 
+    // Matching result alert msg
+    const [open, setOpen] = useState(false);
+    const handleAlertClick = () => {
+        setOpen(true); // show the snackbar
+    };
+    const handleClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpen(false);
+    };
+
+
     const handleSearch = () => {
         setError(null);
         // const min = parseFloat(filters.weightMin) || 0;
@@ -535,6 +549,9 @@ const StockData = () => {
             const matchesStockID =
                 !filters.stockID ||
                 stock.STOCKID?.toLowerCase().includes(filters.stockID.toLowerCase());
+            const matchesCertificate =
+                !filters.certificate ||
+                stock.CERTIFICATE_NUMBER?.toLowerCase().includes(filters.certificate.toLowerCase());
             const matchesColor = !filters.color || stock.COLOR === filters.color;
             const matchesClarity = !filters.clarity || normalize(stock.CLARITY) === normalize(filters.clarity);
             // const matchesShape = !filters.shape || getShapeKey(stock.SHAPE) === getShapeKey(filters.shape);
@@ -543,12 +560,15 @@ const StockData = () => {
             const matchesShape = !filters.shape || normalizeShape(stock.SHAPE) === normalizeShape(filters.shape);
 
 
-            return withinWeight && matchesStockID && matchesColor && matchesClarity && matchesShape;
+            return withinWeight && matchesStockID && matchesCertificate && matchesColor && matchesClarity && matchesShape;
         });
 
-        if (filters.shape || filters.color || filters.clarity || filters.stockID || weightMin !== 0 || weightMax !== 25) {
+
+        if (filters.shape || filters.color || filters.clarity || filters.stockID || filters.certificate || weightMin !== 0 || weightMax !== 25) {
             // Only show error if filters are applied
             if (result.length === 0) {
+                // raval
+                setOpen(true);
                 setError("No matching results found.");
             }
         }
@@ -561,7 +581,7 @@ const StockData = () => {
     };
 
     const resetFilter = async () => {
-        setFilters({ color: '', clarity: '', shape: '', stockID: '' });
+        setFilters({ color: '', clarity: '', shape: '', stockID: '', certificate: '' });
         setWeightMin(0);
         setWeightMax(25);
         setWeightRange([0, 25]);
@@ -582,6 +602,13 @@ const StockData = () => {
             }
         }
     };
+
+    const stockIdOptions = [...new Set(stocks.map(stock => stock.STOCKID).filter(Boolean))];
+    // const certificateOptions = [...new Set(stocks.map(stock => stock.CERTIFICATE_NUMBER).filter(Boolean))];
+    const certificateOptions = useMemo(() => {
+        return [...new Set(stocks.map(stock => stock.CERTIFICATE_NUMBER).filter(Boolean))];
+    }, [stocks]);
+
 
 
 
@@ -660,8 +687,31 @@ const StockData = () => {
                         >
                             Sell
                         </Button>
+                        {/* Result msg */}
+                        {filteredData.length > 0 && (
+                            <Chip
+                                className='flex flex-end'
+                                label={`Found ${filteredData.length} result${filteredData.length > 1 ? 's' : ''}`}
+                                color="primary"
+                                variant="outlined"
+                                sx={{ mt: 2, ml: 2 }}
+                            />
+                        )}
                     </Stack>
                 </Box>
+
+                {/* Alert */}
+                <Snackbar
+                    open={open}
+                    autoHideDuration={3000}
+                    onClose={handleClose}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                >
+                    <Alert onClose={handleClose} severity="default" variant="filled" sx={{ width: '100%' }}>
+                        No matching results found.
+                    </Alert>
+                </Snackbar>
+
 
 
                 {/* Search */}
@@ -705,6 +755,7 @@ const StockData = () => {
                                 type="number"
                                 label="Min"
                                 size="small"
+                                sx={{ width: "90px" }}
                                 value={weightMin}
                                 onChange={(e) => {
                                     const value = parseFloat(e.target.value) || 0;
@@ -716,6 +767,7 @@ const StockData = () => {
                                 type="number"
                                 label="Max"
                                 size="small"
+                                sx={{ width: "90px" }}
                                 value={weightMax}
                                 onChange={(e) => {
                                     const value = parseFloat(e.target.value) || 0;
@@ -728,16 +780,54 @@ const StockData = () => {
 
                     {/* Stockid filter */}
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
+                        <Autocomplete
+                            size="small"
+                            options={stockIdOptions}
+                            getOptionLabel={(option) => option || ""}
+                            value={filters.stockID}
+                            onChange={(e, newValue) =>
+                                setFilters((prev) => ({ ...prev, stockId: newValue || '' }))
+                            }
+                            renderInput={(params) => (
+                                <TextField {...params} label="Stock Id" />
+                            )}
+                            sx={{ width: 200 }}
+                        />
+                        {/* <TextField
                             label="Stock ID"
                             size="small"
                             value={filters.stockID}
                             onChange={(e) =>
                                 setFilters((prev) => ({ ...prev, stockID: e.target.value.toUpperCase() }))
                             }
-                        />
+                        /> */}
                     </Box>
 
+                    {/* Certificate Filter */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Autocomplete
+                            size="small"
+                            options={certificateOptions}
+                            getOptionLabel={(option) => option || ""}
+                            value={filters.certificate}
+                            onChange={(e, newValue) =>
+                                setFilters((prev) => ({ ...prev, certificate: newValue || '' }))
+                            }
+                            renderInput={(params) => (
+                                <TextField {...params} label="Certificate" />
+                            )}
+                            sx={{ width: 200 }}
+                        />
+
+                        {/* <TextField
+                            label="Certificate"
+                            size="small"
+                            value={filters.certificate}
+                            onChange={(e) =>
+                                setFilters((prev) => ({ ...prev, certificate: e.target.value }))
+                            }
+                        /> */}
+                    </Box>
 
                     {/* Shape Filter */}
                     <FormControl size="small" sx={{ minWidth: 120 }}>

@@ -3,6 +3,7 @@ import styles from "./Login.module.css";
 import { useNavigate } from "react-router-dom";
 import Axios from "axios";
 import API from '../../API'
+import { Alert, Snackbar } from "@mui/material";
 
 const Login = () => {
     const [activeTab, setActiveTab] = useState("signup");
@@ -63,6 +64,14 @@ const Login = () => {
         }
     };
 
+    const [open, setOpen] = useState(false);
+    const handleClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpen(false);
+    };
+
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -87,8 +96,10 @@ const Login = () => {
 
         } catch (error) {
             if (error.response && error.response.data && error.response.data.message) {
+                setOpen(true); // This shows the snackbar
                 alert(error.response.data.message);
             } else {
+                setOpen(true); // This shows the snackbar
                 alert("Something went wrong. Please try again.");
                 console.error("Error while Login : ", error);
             }
@@ -116,6 +127,23 @@ const Login = () => {
 
     return (
         <div className={styles.logincontainer}>
+
+            <Snackbar
+                open={open}
+                autoHideDuration={2000}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={handleClose}
+                    severity="error"
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    Login Failed!
+                </Alert>
+            </Snackbar>
+
             <div className={styles.formBox}>
                 {/* Tabs */}
                 <div className={styles.tabs}>
