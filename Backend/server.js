@@ -1,35 +1,20 @@
+require('dotenv').config(); // Always at top
 const express = require('express');
+const pool = require('./config/pool');
 const cors = require('cors');
 const db = require('./config/db');
-const pool = require('./config/pool');
 const cookieParser = require('cookie-parser');
 const allRoutes = require('./routes/AllRoutes');
 
 const app = express();
 const HOST = process.env.HOST || "localhost";
 const PORT = process.env.PORT || 5000;
-require('dotenv').config();
 
-app.set('trust proxy', 1); // Trust NGINX for secure cookies
-
-// ✅ MySQL connection 
-db.connect((err) => {
-    if (err) {
-        console.error('MySQL connection error:', err);
-        return;
-    }
-    console.log('Connected to MySQL');
+app.get('/', (req, res) => {
+    res.send('Backend is working!');
 });
 
-// Only once at startup
-pool.query('SELECT 1')
-    .then(() => {
-        console.log('MySQL pool is connected.');
-    })
-    .catch((err) => {
-        console.error('MySQL pool connection error:', err);
-    });
-
+app.set('trust proxy', 1); // Trust NGINX for secure cookies
 
 const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || [];
 app.use((req, res, next) => {
@@ -55,34 +40,20 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-
-
-// app.use(express.json());
+app.use(express.json());
 
 app.use(cookieParser());
 app.use(allRoutes);
-// Handle uncaught errors as JSON
+
 app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
+    console.error('got error:', err);
     res.status(err.status || 500).json({
         error: err.message || 'Internal Server Error',
     });
 });
 
-app.get('/', (req, res) => {
-    res.send('Backend is working!');
-});
-app.use((err, req, res, next) => {
-    console.log("got error");
-    console.error(err.stack);
-    res.status(500).send('Backend Server not response!');
-});
-
-
-
 app.post('/api/auth/forgot-password', async (req, res) => {
-    const { email, password } = req.body;
-
+    //     const { email, password } = req.body;
     try {
         const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ?', [email]);
 
@@ -101,8 +72,6 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 });
 
-
-// Assuming you store tokens in DB table `tokens` with columns: USER_ID, TOKEN
 app.get('/api/auth/validate-token', async (req, res) => {
     // const authHeader = req.headers['authorization'];
     const token = req.cookies.token; // Get token from HttpOnly cookie
@@ -157,8 +126,16 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 
+pool.query('SELECT 1')
+    .then(() => {
+        console.log("✅ MySQL pool connected!");
+        app.listen(PORT, () => {
+            console.log(`🚀 Server running on http://localhost:${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error("❌ Failed to connect to MySQL:", err.message);
+        process.exit(1);
+    });
 
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://${HOST}:${PORT}`);
-});
