@@ -22,6 +22,7 @@ const ShareAPI = () => {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
+        difference: ""
     });
     const [status, setStatus] = useState(null); // success or error message
     const [loading, setLoading] = useState(false);
@@ -41,7 +42,7 @@ const ShareAPI = () => {
 
         const { name, email } = formData;
         if (!name || !email) {
-            setStatus('Please fill in both name and email.');
+            setStatus('Please fill the both name and email.');
             return;
         }
 
@@ -52,7 +53,8 @@ const ShareAPI = () => {
             fetchAPIHistory();
             setFormData({
                 name: "",
-                email: ""
+                email: "",
+                difference: ""
             })
         } catch (error) {
             setStatus('Failed to send email. Please try again.');
@@ -110,6 +112,18 @@ const ShareAPI = () => {
                             required
                             sx={{ mt: 4 }}
                         />
+                        <TextField
+                            fullWidth
+                            label="Difference (%)"
+                            type="number"
+                            id="difference"
+                            name="difference"
+                            value={formData.difference}
+                            onChange={handleChange}
+                            placeholder="Enter to increase by %"
+                            sx={{ mt: 4 }}
+                        />
+
                         <br />
                         <br />
                         <Button type='submit' disabled={loading} fullWidth variant='contained'>
