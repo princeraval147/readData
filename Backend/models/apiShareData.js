@@ -1,12 +1,22 @@
 const pool = require('../config/pool');
+const generateToken = require('../utils/generateToken');
 
-const createShare = (data) => {
+const createShare = async (data) => {
+    const token = await generateToken();
     const query = `
-        INSERT INTO api_shares (USER_ID, RECIPIENT_EMAIL, NAME)
-        VALUES (?, ?, ?)
+        INSERT INTO api_shares (USER_ID, RECIPIENT_EMAIL, NAME, DIFFERENCE, TOKEN)
+        VALUES (?, ?, ?, ?, ?)
     `;
-    return pool.query(query, [data.userId, data.recipientEmail, data.Name]);
+    const [result] = await pool.query(query, [
+        data.userId,
+        data.recipientEmail,
+        data.Name,
+        data.difference || 0,
+        token
+    ]);
+    return { ...result, token }; // this will include insertId
 };
+
 
 const getSharedAPI = (userId) => {
     const query = `
