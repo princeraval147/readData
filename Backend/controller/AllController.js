@@ -1,12 +1,10 @@
-const pool = require('../config/pool');
-const jwt = require('jsonwebtoken');
 require('dotenv').config();
-
-const transporter = require('../config/mailer');
-const generateToken = require('../utils/generateToken');
+const pool = require('../config/pool');
 
 // user
 exports.register = async (req, res) => {
+    const transporter = require('../config/mailer');
+    const generateToken = require('../utils/generateToken');
     const token = await generateToken();
     console.log("New Token Created", token);
     const { username, email, password } = req.body;
@@ -357,63 +355,137 @@ exports.getDiamondStock = async (req, res) => {
     }
 }
 
+// raval
 exports.apiDiamondStock = async (req, res) => {
-    const userId = req.user?.id;
-    if (!userId) {
-        return res.status(400).json({ message: 'User ID missing' });
-    }
-    const query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
+    const { id: userId, shareId, isSharedAccess } = req.user;
     try {
-        const [results] = await pool.query(query, [userId]);
+        let query, params;
+        if (isSharedAccess && shareId) {
+            // Shared token — fetch from shared_diamond_stock
+            query = 'SELECT * FROM share_diamond_stock WHERE SHARE_ID = ? ORDER BY ID';
+            params = [shareId];
+        } else {
+            // Normal user token — fetch from diamond_stock
+            query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
+            params = [userId];
+        }
+        const [results] = await pool.query(query, params);
         res.json(results);
     } catch (err) {
-        console.error('Error fetching API data :', err);
+        console.error('Error fetching API data:', err);
         res.status(500).json({ message: 'Error fetching API data' });
     }
-}
+};
+// exports.apiDiamondStock = async (req, res) => {
+//     const userId = req.user?.id;
+//     if (!userId) {
+//         return res.status(400).json({ message: 'User ID missing' });
+//     }
+//     const query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
+//     try {
+//         const [results] = await pool.query(query, [userId]);
+//         res.json(results);
+//     } catch (err) {
+//         console.error('Error fetching API data :', err);
+//         res.status(500).json({ message: 'Error fetching API data' });
+//     }
+// }
 
+// raval
 // Share API
-const ApiShareData = require('../models/apiShareData');
-const ShareAPI = require('../config/shareAPIEmail');
-// const { useId } = require('react');
 exports.shareApi = async (req, res) => {
+    const ApiShareData = require('../models/apiShareData');
+    const ShareAPI = require('../config/shareAPIEmail');
     const { name, email, difference } = req.body;
-    const token = req.cookies.token;
+    // const token = req.cookies.token;
     const userId = req.user.id;
 
     if (!email || !name) return res.status(400).json({ message: 'Email and name are required' });
-    if (!token) return res.status(401).json({ message: 'Authentication token missing' });
-
-    // If difference === "1", fetch user's diamond stock and update price
-    if (difference === "1") {
-        const stockQuery = 'SELECT * FROM diamond_stock WHERE USER_ID = ?';
-        const [stock] = await pool.query(stockQuery, [userId]);
-
-        for (const item of stock) {
-            const updatedPrice = (item.PRICE_PER_CARAT * 1.01).toFixed(2);
-            const updateQuery = 'UPDATE diamond_stock SET PRICE_PER_CARAT = ? WHERE ID = ?';
-            await pool.query(updateQuery, [updatedPrice, item.ID]);
-        }
-    }
+    // if (!token) return res.status(401).jsson({ message: 'Authentication token missing' });
 
     try {
-        // ShareAPI({ name, email, token });
+        // 1. Insert into api_shares
+        const result = await ApiShareData.createShare({
+            userId,
+            recipientEmail: email,
+            Name: name,
+            difference
+        });
+        const shareId = result.insertId;
+        const token = result.token;
+        // console.log("✅ Shared share id =", shareId);
+        // 2. Get user stock
+        const [stock] = await pool.query('SELECT * FROM diamond_stock WHERE USER_ID = ?', [userId]);
+
+        // 3. Insert into shared_diamond_stock
+        for (const item of stock) {
+            const differencePercent = difference ? parseFloat(difference) : 0;
+            // const differencePercent = parseFloat(difference);
+            const updatedPrice =
+                differencePercent !== 0
+                    ? (item.PRICE_PER_CARAT * (1 + differencePercent / 100)).toFixed(2)
+                    : item.PRICE_PER_CARAT;
+            await pool.query(`
+                INSERT INTO share_diamond_stock (
+                    SHARE_ID, USER_ID, SHAPE, COLOR, CLARITY, WEIGHT, PRICE_PER_CARAT, REPORT_NO,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                shareId,
+                userId,
+                item.SHAPE,
+                item.COLOR,
+                item.CLARITY,
+                item.WEIGHT,
+                updatedPrice,
+                item.REPORT_NO
+            ]);
+        }
+
+        // 4. Send email
+        await ShareAPI({ name, email, token });
+
+        // 5. Respond to client
         res.json({ message: 'Email sent successfully!' });
 
-        // Store in DB api_shares table 
-        await ApiShareData.createShare({
-            userId: userId,
-            recipientEmail: email,
-            Name: name
-        });
-
     } catch (error) {
-        console.error('Error sending email:', error.message);
+        console.error('❌ Error sharing API:', error);
         res.status(500).json({ message: 'Failed to send email' });
     }
-}
+};
+
+
+
+
+// exports.shareApi = async (req, res) => {
+//     const { name, email, difference } = req.body;
+//     const token = req.cookies.token;
+//     const userId = req.user.id;
+
+//     if (!email || !name) return res.status(400).json({ message: 'Email and name are required' });
+//     if (!token) return res.status(401).json({ message: 'Authentication token missing' });
+
+
+
+//     try {
+//         // send email
+//         // ShareAPI({ name, email, token });
+//         res.json({ message: 'Email sent successfully!' });
+
+//         // Store in DB api_shares table 
+//         await ApiShareData.createShare({
+//             userId: userId,
+//             recipientEmail: email,
+//             Name: name
+//         });
+
+//     } catch (error) {
+//         console.error('Error sending email:', error.message);
+//         res.status(500).json({ message: 'Failed to send email' });
+//     }
+// }
 
 exports.SharedAPI = async (req, res) => {
+    const ApiShareData = require('../models/apiShareData');
     const userId = req.user.id;
     try {
         const [rows] = await ApiShareData.getSharedAPI(userId);
