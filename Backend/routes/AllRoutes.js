@@ -2,14 +2,14 @@ const db = require("../config/db");
 const express = require("express");
 const router = express.Router();
 const {
-    getClarity, getColor, getCut, getFL, getShape,
+    getClarity,
+    getColor, getCut, getFL, getShape,
     addDiamondStock, deleteSell,
     updateStock,
     addSell,
     uploadExcel,
     getDiamondStock,
     register,
-    // approve,
     login,
     shareApi,
     SharedAPI,
@@ -19,7 +19,7 @@ const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
 
 
-// user register/login
+// user register / login
 router.post("/api/auth/register", register);
 // router.post("/api/auth/approve", approve);
 router.post("/api/auth/login", login);
