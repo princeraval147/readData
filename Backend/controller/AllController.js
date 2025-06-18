@@ -360,15 +360,33 @@ exports.apiDiamondStock = async (req, res) => {
     const { id: userId, shareId, isSharedAccess } = req.user;
     try {
         let query, params;
-        if (isSharedAccess && shareId) {
-            // Shared token — fetch from shared_diamond_stock
-            query = 'SELECT * FROM share_diamond_stock WHERE SHARE_ID = ? ORDER BY ID';
-            params = [shareId];
-        } else {
-            // Normal user token — fetch from diamond_stock
-            query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
-            params = [userId];
-        }
+        // if (isSharedAccess && shareId) {
+        // Shared token — fetch from shared_diamond_stock
+        query = `SELECT 
+                STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
+                HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO, CITY, STATE, COUNTRY, DEPTH_PERCENT,
+                TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
+                FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
+                CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER
+                CERTIFICATE_IMAGE, FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE
+                IS_ACTIVE, BGM, NO_BGM, TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY
+                FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
+            FROM share_diamond_stock WHERE SHARE_ID = ? ORDER BY ID`;
+        params = [shareId];
+        // } else {
+        // Normal user token — fetch from diamond_stock
+        //     query = `SELECT 
+        //         STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
+        //         HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO, CITY, STATE, COUNTRY, DEPTH_PERCENT,
+        //         TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
+        //         FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
+        //         CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER
+        //         CERTIFICATE_IMAGE, FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE
+        //         IS_ACTIVE, BGM, NO_BGM, TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY
+        //         FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
+        //     FROM diamond_stock WHERE USER_ID = ? ORDER BY ID`;
+        //     params = [userId];
+        // }
         const [results] = await pool.query(query, params);
         res.json(results);
     } catch (err) {
@@ -425,24 +443,39 @@ exports.shareApi = async (req, res) => {
                 differencePercent !== 0
                     ? (item.PRICE_PER_CARAT * (1 + differencePercent / 100)).toFixed(2)
                     : item.PRICE_PER_CARAT;
+            const updatedFinalPrice = parseFloat((updatedPrice * item.WEIGHT).toFixed(2));
             await pool.query(`
                 INSERT INTO share_diamond_stock (
-                    SHARE_ID, USER_ID, SHAPE, COLOR, CLARITY, WEIGHT, PRICE_PER_CARAT, REPORT_NO,
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    SHARE_ID, USER_ID,
+                    WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY,
+                    FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO,
+                    CITY, STATE, COUNTRY, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE,
+                    RAP_PER_CARAT, RAP_PRICE, DISCOUNT, HEART_ARROW, STAR_LENGTH, 
+                    LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO, CULET_SIZE, CULET_CONDITION, 
+                    GIRDLE_THIN, GIRDLE_THICK, GIRDLE_CONDITION, GIRDLE_PER, CERTIFICATE_IMAGE, 
+                    FLUORESCENCE_COLOR, ADMIN_ID, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM, TINGE, 
+                    FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, 
+                    CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
+                    PRICE_PER_CARAT, FINAL_PRICE, USER_TOKEN, DIFFERENCE
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
             `, [
                 shareId,
                 userId,
-                item.SHAPE,
-                item.COLOR,
-                item.CLARITY,
-                item.WEIGHT,
-                updatedPrice,
-                item.REPORT_NO
+                item.WEIGHT, item.SHAPE, item.COLOR, item.CLARITY, item.CUT, item.POLISH, item.SYMMETRY,
+                item.FLUORESCENCE, item.LENGTH, item.WIDTH, item.HEIGHT, item.SHADE, item.MILKY, item.EYE_CLEAN, item.LAB, item.CERTIFICATE_COMMENT, item.REPORT_NO,
+                item.CITY, item.STATE, item.COUNTRY, item.DEPTH_PERCENT, item.TABLE_PERCENT, item.DIAMOND_VIDEO, item.DIAMOND_IMAGE,
+                item.RAP_PER_PRICE, item.RAP_PRICE, item.DISCOUNT, item.HEART_ARROW, item.STAR_LENGTH,
+                item.LASER_DESCRIPTION, item.GROWTH_TYPE, item.KEY_TO_SYMBOL, item.LW_RATIO, item.CULET_SIZE, item.CULET_CONDITION,
+                item.GIRDLE_THIN, item.GIRDLE_THICK, item.GIRDLE_CONDITION, item.GIRDLE_PER, item.CERTIFICATE_IMAGE,
+                item.FLUORESCENCE_COLOR, item.ADMIN_ID, item.STATUS, item.DIAMOND_TYPE, item.IS_ACTIVE, item.BGM, item.NO_BGM, item.TINGE,
+                item.FANCY_COLOR, item.FANCY_COLOR_INTENSITY, item.FANCY_COLOR_OVERTONE, item.CERTIFICATE_NUMBER,
+                item.CROWN_HEIGHT, item.CROWN_ANGLE, item.PAVILLION_DEPTH, item.PAVILION_ANGLE,
+                updatedPrice, updatedFinalPrice, token, differencePercent
             ]);
         }
 
         // 4. Send email
-        await ShareAPI({ name, email, token });
+        // await ShareAPI({ name, email, token });
 
         // 5. Respond to client
         res.json({ message: 'Email sent successfully!' });
