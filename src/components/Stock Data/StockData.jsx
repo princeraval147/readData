@@ -293,10 +293,8 @@ const StockData = () => {
         sym: 'EX',
         length: '',
         width: '',
-        drate: '',
         price: '',
         finalprice: '',
-        amountRs: '',
         party: '',
         due: ''
     });
@@ -319,11 +317,7 @@ const StockData = () => {
             length: '',
             width: '',
             price: '',
-            drate: '',
             finalprice: '',
-            amountRs: '',
-            party: '',
-            due: ''
         });
     }
 
@@ -346,15 +340,11 @@ const StockData = () => {
 
             const weight = parseFloat(updated.weight) || 0;
             const price = parseFloat(updated.price) || 0;
-            const drate = parseFloat(updated.drate) || 0;
-
             const finalPrice = price * weight;
-            const amountRs = drate * finalPrice;
 
             return {
                 ...updated,
                 finalprice: finalPrice.toFixed(2),
-                amountRs: amountRs.toFixed(2),
             };
         });
     };
@@ -897,16 +887,12 @@ const StockData = () => {
                 </Box>
 
                 {/* form */}
-                <div style={{ overflowX: "auto" }}>
+                <div>
                     <form action="" onSubmit={handleSubmit}>
                         <table className={styles.inputTable}>
                             <thead>
                                 <tr>
-                                    {/* <th>Barcode</th> */}
                                     <th>Stock Id</th>
-                                    {/* <th>Kapan</th>
-                                    <th>Lot</th>
-                                    <th>Tag</th> */}
                                     <th>Certificate</th>
                                     <th>Weight</th>
                                     <th>Shape</th>
@@ -919,23 +905,8 @@ const StockData = () => {
                                     <th>Width</th>
                                     <th>Price Per Carat</th>
                                     <th>Final Price</th>
-                                    <th>DRate</th>
-                                    <th>Amount (Rs)</th>
-                                    {/* <th>Party</th> */}
-                                    {/* <th>Due</th> */}
                                 </tr>
                                 <tr>
-                                    {/* <td>
-                                        <input
-                                            onKeyDown={handleEnterAsTab}
-                                            type="text"
-                                            name="barcode"
-                                            placeholder='barcode'
-                                            value={formData.barcode}
-                                            onChange={handleChange}
-                                            ref={barcoderef}
-                                        />
-                                    </td> */}
                                     <td>
                                         <input
                                             onKeyDown={handleEnterAsTab}
@@ -947,36 +918,6 @@ const StockData = () => {
                                             ref={stockIdRef}
                                         />
                                     </td>
-                                    {/* <td>
-                                        <input
-                                            onKeyDown={handleEnterAsTab}
-                                            type="text"
-                                            name="kapan"
-                                            placeholder='kapan'
-                                            value={formData.kapan}
-                                            onChange={handleChange}
-                                        />
-                                    </td>
-                                    <td>
-                                        <input
-                                            onKeyDown={handleEnterAsTab}
-                                            type="text"
-                                            name="lot"
-                                            placeholder='lot'
-                                            value={formData.lot}
-                                            onChange={handleChange}
-                                        />
-                                    </td>
-                                    <td>
-                                        <input
-                                            onKeyDown={handleEnterAsTab}
-                                            type="text"
-                                            name="tag"
-                                            placeholder='tag'
-                                            value={formData.tag}
-                                            onChange={handleChange}
-                                        />
-                                    </td> */}
                                     <td>
                                         <input
                                             onKeyDown={handleEnterAsTab}
@@ -1110,7 +1051,6 @@ const StockData = () => {
                                     </td>
                                     <td>
                                         <input
-                                            onKeyDown={handleEnterAsTab}
                                             type="number"
                                             step="any"
                                             name="finalprice"
@@ -1121,51 +1061,6 @@ const StockData = () => {
                                             readOnly
                                         />
                                     </td>
-                                    <td>
-                                        <input
-                                            onKeyDown={handleEnterAsTab}
-                                            type="number"
-                                            step="any"
-                                            name="drate"
-                                            placeholder='Dollar Rate'
-                                            value={formData.drate}
-                                            onChange={handleChange}
-                                            ref={drateRef}
-                                        />
-                                    </td>
-                                    <td>
-                                        <input
-                                            // onKeyDown={handleEnterAsTab}
-                                            type="number"
-                                            step="any"
-                                            name="amountRs"
-                                            placeholder='Rs Amt'
-                                            value={formData.amountRs}
-                                            onChange={handleChange}
-                                            ref={amountRsRef}
-                                        />
-                                    </td>
-                                    {/* <td>
-                                        <input
-                                            onKeyDown={handleEnterAsTab}
-                                            type="text"
-                                            name="party"
-                                            placeholder='party'
-                                            value={formData.party}
-                                            onChange={handleChange}
-                                            ref={partyRef}
-                                        />
-                                    </td> */}
-                                    {/* <td>
-                                        <input
-                                            // onKeyDown={handleEnterAsTab}
-                                            type="number"
-                                            name="due"
-                                            placeholder='due'
-                                            value={formData.due}
-                                            onChange={handleChange}
-                                        />
-                                    </td> */}
                                     <td style={{ display: 'none' }}>
                                         <input type="submit" />
                                     </td>
