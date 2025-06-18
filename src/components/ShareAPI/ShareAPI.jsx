@@ -122,6 +122,7 @@ const ShareAPI = () => {
                             onChange={handleChange}
                             placeholder="Enter to increase by %"
                             sx={{ mt: 4 }}
+                            inputProps={{ max: 100 }}
                         />
 
                         <br />
