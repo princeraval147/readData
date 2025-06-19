@@ -18,7 +18,7 @@ exports.register = async (req, res) => {
         }
 
         // Step 2: Insert user if email not found
-        const insertQuery = 'INSERT INTO users (USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?)';
+        const insertQuery = 'INSERT INTO users (USERNAME, EMAIL, PASSWORD, LAST_LOGIN) VALUES (?, ?, ?, CURRENT_TIMESTAMP)';
         const [insertResult] = await pool.query(insertQuery, [username, email, password]);
         const userId = insertResult.insertId;
 
@@ -80,7 +80,7 @@ exports.login = async (req, res) => {
         }
 
         const user = users[0];
-        console.log("Login user Data = ", user);
+        // console.log("Login user Data = ", user);
 
         if (!user.ISAPPROVED) {
             return res.status(403).json({ message: 'You are not approved by admin yet' });
@@ -118,6 +118,10 @@ exports.login = async (req, res) => {
                 username: user.USERNAME,
             },
         });
+
+        // 5. Update Last login
+        await pool.query('UPDATE users SET LAST_LOGIN = CURRENT_TIMESTAMP WHERE ID = ?', [user.ID]);
+
 
     } catch (err) {
         console.error('Login error:', err);
@@ -300,7 +304,7 @@ exports.uploadExcel = async (req, res) => {
 
         const insertQuery = `
         INSERT INTO diamond_stock (
-            USER_ID, KAPAN, PACKET, TAG, STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, 
+            USER_ID, STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, 
             FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO,
             CITY, STATE, COUNTRY, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, 
             RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT, FINAL_PRICE, HEART_ARROW, STAR_LENGTH, 
@@ -314,7 +318,7 @@ exports.uploadExcel = async (req, res) => {
 
         const values = data.map(item => [
             userId,
-            item["KAPAN"] || '', item["PACKET"] || '', item["TAG"] || '', item["STOCKID"] || '',
+            item["STOCKID"] || '',
             item["SHAPE"] || '', parseNumeric(item["WEIGHT"]), item["COLOR"] || '', item["CLARITY"] || '',
             item["CUT"] || '', item["POLISH"] || '', item["SYMMETRY"] || '', item["FLUORESCENCE"] || '',
             parseNumeric(item["LENGTH"]), parseNumeric(item["WIDTH"]), parseNumeric(item["HEIGHT"]), item["SHADE"] || '',
@@ -335,6 +339,7 @@ exports.uploadExcel = async (req, res) => {
         // console.log('Column Count:', values[0].length);
 
         const [result] = await pool.query(insertQuery, [values]);
+        const [result2] = await pool.query(insertShareStockQuery, [values]);
         res.json({ message: `Inserted ${result.affectedRows} rows` });
 
     } catch (error) {
@@ -357,12 +362,11 @@ exports.getDiamondStock = async (req, res) => {
 
 // raval
 exports.apiDiamondStock = async (req, res) => {
-    const { id: userId, shareId, isSharedAccess } = req.user;
+    const userId = req.user.id;
+    const { shareId } = req.user;
     try {
-        let query, params;
-        // if (isSharedAccess && shareId) {
-        // Shared token — fetch from shared_diamond_stock
-        query = `SELECT 
+        // Get original stock
+        const [stockRows] = await pool.query(`SELECT 
                 STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
                 HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO, CITY, STATE, COUNTRY, DEPTH_PERCENT,
                 TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
@@ -371,43 +375,30 @@ exports.apiDiamondStock = async (req, res) => {
                 CERTIFICATE_IMAGE, FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE
                 IS_ACTIVE, BGM, NO_BGM, TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY
                 FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
-            FROM share_diamond_stock WHERE SHARE_ID = ? ORDER BY ID`;
-        params = [shareId];
-        // } else {
-        // Normal user token — fetch from diamond_stock
-        //     query = `SELECT 
-        //         STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
-        //         HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO, CITY, STATE, COUNTRY, DEPTH_PERCENT,
-        //         TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
-        //         FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
-        //         CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER
-        //         CERTIFICATE_IMAGE, FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE
-        //         IS_ACTIVE, BGM, NO_BGM, TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY
-        //         FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
-        //     FROM diamond_stock WHERE USER_ID = ? ORDER BY ID`;
-        //     params = [userId];
-        // }
-        const [results] = await pool.query(query, params);
-        res.json(results);
+            FROM diamond_stock WHERE USER_ID = ?`, [userId]);
+        const [difference] = await pool.query("SELECT DIFFERENCE FROM api_shares WHERE ID = ?", [shareId]);
+
+
+        // Apply dynamic price difference
+        const updatedStock = stockRows.map(item => {
+            const diff = parseFloat(difference[0].DIFFERENCE); // Now it's correct!
+            const basePrice = parseFloat(item.PRICE_PER_CARAT || 0);
+            const weight = parseFloat(item.WEIGHT || 0);
+            const newPricePerCarat = +(basePrice * (1 + diff / 100)).toFixed(2);
+            const newFinalPrice = +(newPricePerCarat * weight).toFixed(2);
+            return {
+                ...item,
+                PRICE_PER_CARAT: newPricePerCarat,
+                FINAL_PRICE: newFinalPrice,
+            };
+        });
+
+        res.json(updatedStock);
     } catch (err) {
-        console.error('Error fetching API data:', err);
-        res.status(500).json({ message: 'Error fetching API data' });
+        console.error('Error fetching shared API data:', err);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
-// exports.apiDiamondStock = async (req, res) => {
-//     const userId = req.user?.id;
-//     if (!userId) {
-//         return res.status(400).json({ message: 'User ID missing' });
-//     }
-//     const query = 'SELECT * FROM diamond_stock WHERE USER_ID = ? ORDER BY ID';
-//     try {
-//         const [results] = await pool.query(query, [userId]);
-//         res.json(results);
-//     } catch (err) {
-//         console.error('Error fetching API data :', err);
-//         res.status(500).json({ message: 'Error fetching API data' });
-//     }
-// }
 
 // raval
 // Share API
@@ -429,55 +420,12 @@ exports.shareApi = async (req, res) => {
             Name: name,
             difference
         });
-        const shareId = result.insertId;
         const token = result.token;
-        // console.log("✅ Shared share id =", shareId);
-        // 2. Get user stock
-        const [stock] = await pool.query('SELECT * FROM diamond_stock WHERE USER_ID = ?', [userId]);
 
-        // 3. Insert into shared_diamond_stock
-        for (const item of stock) {
-            const differencePercent = difference ? parseFloat(difference) : 0;
-            // const differencePercent = parseFloat(difference);
-            const updatedPrice =
-                differencePercent !== 0
-                    ? (item.PRICE_PER_CARAT * (1 + differencePercent / 100)).toFixed(2)
-                    : item.PRICE_PER_CARAT;
-            const updatedFinalPrice = parseFloat((updatedPrice * item.WEIGHT).toFixed(2));
-            await pool.query(`
-                INSERT INTO share_diamond_stock (
-                    SHARE_ID, USER_ID,
-                    WEIGHT, SHAPE, COLOR, CLARITY, CUT, POLISH, SYMMETRY,
-                    FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO,
-                    CITY, STATE, COUNTRY, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE,
-                    RAP_PER_CARAT, RAP_PRICE, DISCOUNT, HEART_ARROW, STAR_LENGTH, 
-                    LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO, CULET_SIZE, CULET_CONDITION, 
-                    GIRDLE_THIN, GIRDLE_THICK, GIRDLE_CONDITION, GIRDLE_PER, CERTIFICATE_IMAGE, 
-                    FLUORESCENCE_COLOR, ADMIN_ID, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM, TINGE, 
-                    FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, 
-                    CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
-                    PRICE_PER_CARAT, FINAL_PRICE, USER_TOKEN, DIFFERENCE
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-            `, [
-                shareId,
-                userId,
-                item.WEIGHT, item.SHAPE, item.COLOR, item.CLARITY, item.CUT, item.POLISH, item.SYMMETRY,
-                item.FLUORESCENCE, item.LENGTH, item.WIDTH, item.HEIGHT, item.SHADE, item.MILKY, item.EYE_CLEAN, item.LAB, item.CERTIFICATE_COMMENT, item.REPORT_NO,
-                item.CITY, item.STATE, item.COUNTRY, item.DEPTH_PERCENT, item.TABLE_PERCENT, item.DIAMOND_VIDEO, item.DIAMOND_IMAGE,
-                item.RAP_PER_PRICE, item.RAP_PRICE, item.DISCOUNT, item.HEART_ARROW, item.STAR_LENGTH,
-                item.LASER_DESCRIPTION, item.GROWTH_TYPE, item.KEY_TO_SYMBOL, item.LW_RATIO, item.CULET_SIZE, item.CULET_CONDITION,
-                item.GIRDLE_THIN, item.GIRDLE_THICK, item.GIRDLE_CONDITION, item.GIRDLE_PER, item.CERTIFICATE_IMAGE,
-                item.FLUORESCENCE_COLOR, item.ADMIN_ID, item.STATUS, item.DIAMOND_TYPE, item.IS_ACTIVE, item.BGM, item.NO_BGM, item.TINGE,
-                item.FANCY_COLOR, item.FANCY_COLOR_INTENSITY, item.FANCY_COLOR_OVERTONE, item.CERTIFICATE_NUMBER,
-                item.CROWN_HEIGHT, item.CROWN_ANGLE, item.PAVILLION_DEPTH, item.PAVILION_ANGLE,
-                updatedPrice, updatedFinalPrice, token, differencePercent
-            ]);
-        }
+        // 2. Send email
+        await ShareAPI({ name, email, token });
 
-        // 4. Send email
-        // await ShareAPI({ name, email, token });
-
-        // 5. Respond to client
+        // 3. Respond to client
         res.json({ message: 'Email sent successfully!' });
 
     } catch (error) {
