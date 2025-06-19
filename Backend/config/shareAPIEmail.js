@@ -8,35 +8,38 @@ const ShareAPI = async ({ name, email, token }) => {
     const mailOptions = {
         from: '"Platinum Tech" <your-email@example.com>',
         to: email,
-        subject: 'Welcome to Platinum Tech – Your API Access Info',
+        subject: 'Your API Access to Shared Diamond Stock – Platinum Tech',
         html: `
-                <p>Hello, ${name}!</p>
-                <p>Thank you for choosing <strong>Platinum Tech</strong>.</p>
+         <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                <p>Hi ${name},</p>
 
-                <h3>🔐 API Access Instructions</h3>
-                <p>You can now access your shared diamond stock data via our secure API.</p>
+                <p>You've been granted secure access to diamond stock shared via <strong>Platinum Tech</strong>.</p>
 
+                <h3 style="color: #1e88e5;">🔐 API Access Details</h3>
                 <ul>
                     <li><strong>API Endpoint:</strong> <code>${apiUrl}</code></li>
-                    <li><strong>Authorization:</strong> <code>Bearer ${token}</code></li>
+                    <li><strong>Authorization Header:</strong> <code>Bearer ${token}</code></li>
                 </ul>
 
-                 <h4>📘 How to Use:</h4>
-                <p>Send a GET request to the endpoint above with the following header:</p>
+                <h4 style="margin-top: 20px;">📘 How to Use:</h4>
+                <p>To retrieve the stock data, send a <strong>GET</strong> request to the above endpoint using the following HTTP header:</p>
 
-                        <pre><code>
-                    GET ${apiUrl}
-                    Authorization: Bearer ${token}
-                        </code></pre>
+                <pre style="background: #f4f4f4; padding: 12px; border-radius: 6px;">
+                        GET ${apiUrl}
+                        Authorization: Bearer ${token}
+                </pre>
 
-                <p>Make sure to include the <code>Authorization</code> header exactly as shown above.</p>
+                <p><strong>Please keep your token confidential.</strong> This token provides direct access to the shared data.</p>
 
-                <hr/>
+                <hr style="margin: 30px 0;" />
 
-                <p>If you have any questions, feel free to Contact.</p>
-                <p>Visit our website: https://platinumsofttech.com/</p>
+                <p>If you need help integrating this API or have any questions, feel free to reach out.</p>
+                <p>🔗 <a href="https://platinumsofttech.com" target="_blank">Visit our website</a></p>
 
-                <p>Thanks,<br/>Team Platinum Tech</p>
+                <p>Best regards,<br/>
+                <strong>Team Platinum Tech</strong><br/>
+                </p>
+            </div>
             `
     };
 
