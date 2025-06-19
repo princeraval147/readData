@@ -165,6 +165,8 @@ const ShareAPI = () => {
                             <TableCell>Recipient Name</TableCell>
                             <TableCell>Recipient Email</TableCell>
                             <TableCell>Sent At</TableCell>
+                            <TableCell>Difference</TableCell>
+                            <TableCell>API Key</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -174,6 +176,8 @@ const ShareAPI = () => {
                                 <TableCell>{share.NAME}</TableCell>
                                 <TableCell>{share.RECIPIENT_EMAIL}</TableCell>
                                 <TableCell>{new Date(share.SENT_AT).toLocaleDateString()}</TableCell>
+                                <TableCell>{share.DIFFERENCE}</TableCell>
+                                <TableCell>{share.TOKEN}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
