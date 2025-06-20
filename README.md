@@ -1,13 +1,73 @@
-# React + Vite
+# 💎 Diamond Stock Management Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> ⚠️ **Private Internal Application**  
+This project is developed by **Platinum Tech** for internal use by verified diamond companies. Installation or redistribution is not permitted.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📌 Overview
 
-## Expanding the ESLint configuration
+A secure, web-based diamond stock management system designed for:
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-# readData
+- Uploading stock via Excel/CSV
+- Filtering and exporting visible diamond data
+- Sharing stock securely via tokenized API
+- Viewing diamond videos/images
+- Managing company-specific inventories
+
+---
+
+## 🔐 Access Control
+
+- Only approved users with access tokens can:
+  - Upload stock
+  - Share API links
+  - View or export data
+
+---
+
+## 📄 Excel Upload Format
+
+Minimum required fields:  
+`Weight`, `Clarity`
+
+Other accepted fields will be auto-normalized (e.g., `MEASUREMENT1` → `LENGTH`).
+
+---
+
+## 📤 Export Format
+
+- Exports only the data shown in the current table view (with filters).
+- If no data is available, only column headers are exported.
+- Each row includes a generated `ID` field based on its table index.
+
+---
+
+## 🔄 API Sharing
+
+- Unique API tokens generated per user
+- Tokens sent via email for external access
+- Only selected stock is shared securely via `/v1/all-stock` endpoint
+
+---
+
+## ⚙️ Deployment
+
+> 🛠️ Deployment is managed internally.  
+> No public installation, cloning, or third-party hosting is allowed.
+
+---
+
+## 📧 Contact & Support
+
+**Company:** Platinum Tech  
+**Support Email:** princeraval147@gmail.com
+
+If you're an authorized partner and need access, please contact us directly.
+
+---
+
+## 🏷️ License
+
+This software is proprietary.  
+© Platinum Tech – All rights reserved.
