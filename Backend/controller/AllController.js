@@ -339,7 +339,6 @@ exports.uploadExcel = async (req, res) => {
         // console.log('Column Count:', values[0].length);
 
         const [result] = await pool.query(insertQuery, [values]);
-        const [result2] = await pool.query(insertShareStockQuery, [values]);
         res.json({ message: `Inserted ${result.affectedRows} rows` });
 
     } catch (error) {
