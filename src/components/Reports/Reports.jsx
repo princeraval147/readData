@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import API from '../../API';
 import { CSVLink } from 'react-csv';
-import { DateRange } from 'react-date-range';
-import { addDays, startOfMonth, endOfMonth } from 'date-fns';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
 
 
 const Reports = () => {
@@ -17,7 +13,6 @@ const Reports = () => {
 
     const [fromDate, setFromDate] = useState(null);
     const [toDate, setToDate] = useState(null);
-    const [searchDate, setSearchDate] = useState('');
     const [partySearch, setPartySearch] = useState('');
 
 
