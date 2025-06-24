@@ -63,7 +63,7 @@ const Header = () => {
     return (
         <>
 
-            <Toolbar>
+            <Toolbar className='bg-gray-100'>
                 {/* Left - Title */}
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Typography variant="h6" color="inherit" component={NavLink} to="/" sx={{ fontWeight: 'bold' }}>
@@ -83,6 +83,9 @@ const Header = () => {
                             </Button>
                             <Button color="inherit" component={NavLink} to="/share-api">
                                 Share API
+                            </Button>
+                            <Button color="inherit" component={NavLink} to="/reports">
+                                Reports
                             </Button>
                         </>
                     )}
