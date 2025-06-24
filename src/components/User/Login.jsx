@@ -1,9 +1,6 @@
 import { useState } from "react";
-import styles from "./Login.module.css";
 import { NavLink, useNavigate } from "react-router-dom";
-import Axios from "axios";
 import API from '../../API'
-import { Alert, Snackbar } from "@mui/material";
 import { FaGem } from "react-icons/fa";
 
 const Login = () => {
@@ -45,10 +42,6 @@ const Login = () => {
             }
         }
     };
-
-
-
-
 
 
 
