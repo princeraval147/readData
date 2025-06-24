@@ -52,26 +52,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.post('/api/auth/forgot-password', async (req, res) => {
-    //     const { email, password } = req.body;
-    try {
-        const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ?', [email]);
-
-        if (users.length === 0) {
-            return res.status(404).json({ message: 'Email not found' });
-        }
-
-        await pool.query('UPDATE users SET PASSWORD = ? WHERE EMAIL = ?', [password, email]);
-
-        // Ideally, hash password before storing — not shown here
-        res.json({ message: 'Password reset' });
-
-    } catch (error) {
-        console.error('Password reset error:', error);
-        res.status(500).json({ message: 'Server error during password reset' });
-    }
-});
-
 app.get('/api/auth/validate-token', async (req, res) => {
     // const authHeader = req.headers['authorization'];
     const token = req.cookies.token; // Get token from HttpOnly cookie
