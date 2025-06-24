@@ -7,7 +7,7 @@ exports.register = async (req, res) => {
     const generateToken = require('../utils/generateToken');
     const token = await generateToken();
     console.log("New Token Created", token);
-    const { username, email, password } = req.body;
+    const { username, email, password, company, contact } = req.body;
 
     // Step 1: Check if email already exists
     try {
@@ -18,8 +18,8 @@ exports.register = async (req, res) => {
         }
 
         // Step 2: Insert user if email not found
-        const insertQuery = 'INSERT INTO users (USERNAME, EMAIL, PASSWORD, LAST_LOGIN) VALUES (?, ?, ?, CURRENT_TIMESTAMP)';
-        const [insertResult] = await pool.query(insertQuery, [username, email, password]);
+        const insertQuery = 'INSERT INTO users (USERNAME, EMAIL, PASSWORD, LAST_LOGIN, COMPANY, CONTACT) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)';
+        const [insertResult] = await pool.query(insertQuery, [username, email, password, company, contact]);
         const userId = insertResult.insertId;
 
         // Step 3: Store token for new user
@@ -66,7 +66,6 @@ exports.register = async (req, res) => {
         res.status(500).json({ message: 'Server error during registration' });
     }
 }
-
 
 exports.login = async (req, res) => {
     const { email, password } = req.body;
@@ -129,8 +128,25 @@ exports.login = async (req, res) => {
     }
 }
 
+exports.forgotPassword = async (req, res) => {
+    const { email, password } = req.body;
+    console.log(email, password);
+    try {
+        const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ?', [email]);
+        console.log(users);
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'Email not Registered' });
+        }
+        await pool.query('UPDATE users SET PASSWORD = ? WHERE EMAIL = ?', [password, email]);
 
-// GLobarl
+        res.json({ message: 'Password Change Successfully' });
+    } catch (error) {
+        console.error('Password reset error:', error);
+        res.status(500).json({ message: 'Server error during password reset' });
+    }
+}
+
+// GLobal
 exports.getShape = async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM shape ORDER BY SID");
@@ -240,19 +256,24 @@ exports.deleteSell = async (req, res) => {
     }
 };
 
+// raval
 exports.addSell = async (req, res) => {
-    const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party, due } = req.body;
+    const userId = req.user.id;
+    const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party } = req.body;
+    if (!party) {
+        return res.status(400).json({ error: "Party is required" });
+    }
     const query = `
         INSERT INTO sell_data (
             ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
-            DOLLAR_RATE, RS_AMOUNT, STATUS
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, USER_ID
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
         const [result] = await pool.query(query, [
             id, stoneid, weight, price, finalprice,
-            drate, amountRs, status
+            drate, amountRs, status, party, userId
         ]);
 
         res.status(201).json({ message: "Sell record added successfully", id: result.insertId });
@@ -305,7 +326,7 @@ exports.uploadExcel = async (req, res) => {
         const insertQuery = `
         INSERT INTO diamond_stock (
             USER_ID, STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, 
-            FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO,
+            FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, 
             CITY, STATE, COUNTRY, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, 
             RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT, FINAL_PRICE, HEART_ARROW, STAR_LENGTH, 
             LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO, CULET_SIZE, CULET_CONDITION, 
@@ -323,7 +344,7 @@ exports.uploadExcel = async (req, res) => {
             item["CUT"] || '', item["POLISH"] || '', item["SYMMETRY"] || '', item["FLUORESCENCE"] || '',
             parseNumeric(item["LENGTH"]), parseNumeric(item["WIDTH"]), parseNumeric(item["HEIGHT"]), item["SHADE"] || '',
             item["MILKY"] || '', item["EYE_CLEAN"] || '', item["LAB"] || '', item["CERTIFICATE_COMMENT"] || '',
-            item["REPORT_NO"] || '', item["CITY"] || '', item["STATE"] || '', item["COUNTRY"] || '',
+            item["CITY"] || '', item["STATE"] || '', item["COUNTRY"] || '',
             parseNumeric(item["DEPTH_PERCENT"]), parseNumeric(item["TABLE_PERCENT"]), item["DIAMOND_VIDEO"] || '',
             item["DIAMOND_IMAGE"] || '', parseNumeric(item["RAP_PER_CARAT"]), parseNumeric(item["PRICE_PER_CARAT"]),
             parseNumeric(item["RAP_PRICE"]), parseNumeric(item["DISCOUNT"]), parseNumeric(item["FINAL_PRICE"]),
@@ -359,7 +380,6 @@ exports.getDiamondStock = async (req, res) => {
     }
 }
 
-// raval
 exports.apiDiamondStock = async (req, res) => {
     const userId = req.user.id;
     const { shareId } = req.user;
@@ -367,7 +387,7 @@ exports.apiDiamondStock = async (req, res) => {
         // Get original stock
         const [stockRows] = await pool.query(`SELECT 
                 STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
-                HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, REPORT_NO, CITY, STATE, COUNTRY, DEPTH_PERCENT,
+                HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, CITY, STATE, COUNTRY, DEPTH_PERCENT,
                 TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
                 FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
                 CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER
@@ -399,7 +419,6 @@ exports.apiDiamondStock = async (req, res) => {
     }
 };
 
-// raval
 // Share API
 exports.shareApi = async (req, res) => {
     const ApiShareData = require('../models/apiShareData');
@@ -433,37 +452,6 @@ exports.shareApi = async (req, res) => {
     }
 };
 
-
-
-
-// exports.shareApi = async (req, res) => {
-//     const { name, email, difference } = req.body;
-//     const token = req.cookies.token;
-//     const userId = req.user.id;
-
-//     if (!email || !name) return res.status(400).json({ message: 'Email and name are required' });
-//     if (!token) return res.status(401).json({ message: 'Authentication token missing' });
-
-
-
-//     try {
-//         // send email
-//         // ShareAPI({ name, email, token });
-//         res.json({ message: 'Email sent successfully!' });
-
-//         // Store in DB api_shares table 
-//         await ApiShareData.createShare({
-//             userId: userId,
-//             recipientEmail: email,
-//             Name: name
-//         });
-
-//     } catch (error) {
-//         console.error('Error sending email:', error.message);
-//         res.status(500).json({ message: 'Failed to send email' });
-//     }
-// }
-
 exports.SharedAPI = async (req, res) => {
     const ApiShareData = require('../models/apiShareData');
     const userId = req.user.id;
@@ -474,5 +462,27 @@ exports.SharedAPI = async (req, res) => {
     } catch (err) {
         console.error('Error fetching share history:', err.message);
         res.status(500).json({ message: 'Could not fetch history' });
+    }
+}
+
+exports.ShowSellData = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const [rows] = await pool.query(`SELECT * FROM sell_data WHERE USER_ID = ? AND STATUS = 'SOLD'`, [userId]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching sell data:', err.message);
+        res.status(500).json({ message: 'Could not fetch sell data' });
+    }
+}
+
+exports.ShowHoldsData = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const [rows] = await pool.query(`SELECT * FROM sell_data WHERE USER_ID = ? AND STATUS = 'HOLD'`, [userId]);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching sell data:', err.message);
+        res.status(500).json({ message: 'Could not fetch sell data' });
     }
 }
