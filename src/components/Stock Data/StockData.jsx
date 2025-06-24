@@ -18,8 +18,7 @@ const StockData = () => {
     // const partyRef = useRef(null);
     const priceRef = useRef(null);
     const finalPriceRef = useRef(null);
-    const drateRef = useRef(null);
-    const amountRsRef = useRef(null);
+    const partyRef = useRef(null);
 
     const [stocks, setStocks] = useState([]);
     const [error, setError] = useState(null);
@@ -63,7 +62,7 @@ const StockData = () => {
         'STOCK_': 'STOCKID',
         'STOCK': 'STOCKID',
         'CUSTOMER_REF_NO': 'STOCKID',
-        'REPORT_': 'REPORT_NO',
+        'REPORT_': 'CERTIFICATE_NUMBER',
         'TABLE_': 'TABLE_PERCENT',
         'DEPTH_': 'DEPTH_PERCENT',
         'PRICE_PER_CARAT': 'PRICE_PER_CARAT',
@@ -96,7 +95,7 @@ const StockData = () => {
         'TABLE': 'TABLE_PERCENT',
         'DEPTH': 'DEPTH_PERCENT',
         'SYM': 'SYMMETRY',
-        'REPORT_NUMBER': 'REPORT_NO',
+        'REPORT_NUMBER': 'CERTIFICATE_NUMBER',
         'CULET_SIZE': 'CULET_SIZE',
         'GIRDLE_NAME': 'GIRDLE_CONDITION',
         'GIRDLE_PERCENT': 'GIRDLE_PER',
@@ -107,6 +106,7 @@ const StockData = () => {
         'CUTDROP': 'CUT',
         'DOCUMENT_NO': 'CERTIFICATE_NUMBER',
         'CERTIFICATE_': 'CERTIFICATE_NUMBER',
+        'REPORT_NO': 'CERTIFICATE_NUMBER',
         'LOCATION': 'CITY'
     };
 
@@ -210,14 +210,14 @@ const StockData = () => {
                 normalized[dbKey] = value ?? '';
             });
 
-            // 👇 Add KAPAN, PACKET, TAG from STOCKID
-            const stockId = normalized['STOCKID'];
-            if (typeof stockId === 'string' && stockId.includes('-')) {
-                const [kapan, packet, tag = 'A'] = stockId.split('-');
-                normalized['KAPAN'] = kapan || '';
-                normalized['PACKET'] = packet || '';
-                normalized['TAG'] = tag || 'A';
-            }
+            // // 👇 Add KAPAN, PACKET, TAG from STOCKID
+            // const stockId = normalized['STOCKID'];
+            // if (typeof stockId === 'string' && stockId.includes('-')) {
+            //     const [kapan, packet, tag = 'A'] = stockId.split('-');
+            //     normalized['KAPAN'] = kapan || '';
+            //     normalized['PACKET'] = packet || '';
+            //     normalized['TAG'] = tag || 'A';
+            // }
 
             return normalized;
         });
@@ -296,7 +296,6 @@ const StockData = () => {
         price: '',
         finalprice: '',
         party: '',
-        due: ''
     });
 
     const resetFormData = () => {
@@ -318,6 +317,7 @@ const StockData = () => {
             width: '',
             price: '',
             finalprice: '',
+            party: '',
         });
     }
 
@@ -375,11 +375,22 @@ const StockData = () => {
     const [rowData, setRowData] = useState([]);
 
     const handleStatus = async () => {
+
         const isHolding = rowData.STATUS === 'HOLD';
         const newStatus = isHolding ? 'AVAILABLE' : 'HOLD';
 
+
+
+
         try {
             if (!isHolding) {
+                if (formData.party === '' || !formData.party) {
+                    alert("Please enter party name before Update Status.");
+                    setTimeout(() => {
+                        partyRef.current.focus();
+                    }, 100);
+                    return;
+                }
                 // If converting to HOLD, add a sell record
                 const sellPayload = {
                     id: rowData.ID,
@@ -390,7 +401,7 @@ const StockData = () => {
                     drate: formData.drate,
                     amountRs: formData.amountRs,
                     status: newStatus,
-                    // party: formData.party,
+                    party: formData.party,
                     // due: formData.due,
                 };
                 await API.post('/add-sell', sellPayload, { withCredentials: true });
@@ -416,6 +427,13 @@ const StockData = () => {
         // setLoading(true); // Start loading
         setUpdating(true); // Start loading
         try {
+            if (formData.party === '' || !formData.party) {
+                alert("Please enter party name before sell.");
+                setTimeout(() => {
+                    partyRef.current.focus();
+                }, 100);
+                return;
+            }
             // 1. Insert into sell_data
             const sellPayload = {
                 id: rowData.ID,
@@ -426,7 +444,7 @@ const StockData = () => {
                 drate: formData.drate,
                 amountRs: formData.amountRs,
                 status: "SOLD",
-                // party: formData.party,
+                party: formData.party,
                 // due: formData.due,
             };
             await API.post('/add-sell', sellPayload, { withCredentials: true });
@@ -563,10 +581,6 @@ const StockData = () => {
             }
         }
 
-        // if (result.length === 0) {
-        // setError("No matching results found.");
-        // }
-
         setFilteredData(result);
     };
 
@@ -576,7 +590,6 @@ const StockData = () => {
         setWeightMax(25);
         setWeightRange([0, 25]);
         setFilteredData([]);
-        await fetchDiamondStock();
         setError(null);
     }
 
@@ -598,6 +611,7 @@ const StockData = () => {
     const certificateOptions = useMemo(() => {
         return [...new Set(stocks.map(stock => stock.CERTIFICATE_NUMBER).filter(Boolean))];
     }, [stocks]);
+
 
 
 
@@ -905,6 +919,7 @@ const StockData = () => {
                                     <th>Width</th>
                                     <th>Price Per Carat</th>
                                     <th>Final Price</th>
+                                    <th>Party</th>
                                 </tr>
                                 <tr>
                                     <td>
@@ -1051,6 +1066,7 @@ const StockData = () => {
                                     </td>
                                     <td>
                                         <input
+                                            onKeyDown={handleEnterAsTab}
                                             type="number"
                                             step="any"
                                             name="finalprice"
@@ -1061,6 +1077,16 @@ const StockData = () => {
                                             readOnly
                                         />
                                     </td>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            name="party"
+                                            placeholder='Party'
+                                            value={formData.party}
+                                            onChange={handleChange}
+                                            ref={partyRef}
+                                        />
+                                    </td>
                                     <td style={{ display: 'none' }}>
                                         <input type="submit" />
                                     </td>
@@ -1069,48 +1095,6 @@ const StockData = () => {
                         </table>
                     </form>
                 </div>
-
-                {/* {filteredData.length === 0 && filters.shape + filters.color + filters.clarity && (
-                    setError("No results found matching your filter criteria.")
-                )} */}
-                {/* <div style={{ padding: '1rem', textAlign: 'center', color: 'red' }}>
-                    No results found matching your filter criteria.
-                </div> */}
-
-                {/* {loading ? (
-                    <Box
-                        // display="flex"
-                        // flexDirection="column"
-                        // alignItems="center"
-                        // justifyContent="center"
-                        // minHeight="300px"
-                        // border="1px solid #ddd"
-                        // borderRadius={2}
-                        // p={4}
-                        // bgcolor="#f5f5f5"
-                        className={styles.loadingOverlay}
-                    >
-                        <CircularProgress />
-                        <Typography variant="body1" mt={2}>
-                            Loading stock data...
-                Loading...
-            </Typography>
-        </Box >
-                ) : (
-    <StockTable
-        stocks={filteredData.length > 0 ? filteredData : stocks}
-        loading={loading}
-        onRowClick={handleRowClick}
-    />
-)}
-
-{
-    error && (
-        <Box textAlign="center" mt={2} color="error.main">
-            {error}
-        </Box>
-    )
-} */}
 
                 {
                     loading ? (
@@ -1133,16 +1117,6 @@ const StockData = () => {
                         />
                     )
                 }
-
-
-
-                {/* 
-                <StockTable
-                    stocks={filteredData.length > 0 ? filteredData : stocks}
-                    loading={loading}
-                    onRowClick={handleRowClick}
-                /> */}
-
             </Box >
         </>
     )
