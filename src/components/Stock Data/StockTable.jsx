@@ -13,11 +13,11 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
     const headersToShow = [
         "STOCKID", "WEIGHT", "FANCY_COLOR", "FANCY_COLOR_INTENSITY",
         "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
-        "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN", "LAB", "CERTIFICATE_COMMENT",
-        "REPORT_NO", "CITY", "STATE", "COUNTRY", "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
+        "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN", "LAB", "CERTIFICATE_NUMBER", "CERTIFICATE_COMMENT",
+        "CITY", "STATE", "COUNTRY", "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
         "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DISCOUNT", "FINAL_PRICE",
         "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
-        "BGM", "NO_BGM", "CERTIFICATE_NUMBER", "PARTY", "DUE"
+        "BGM", "NO_BGM"
     ];
 
     const allHeaders = stocks.length > 0 ? Object.keys(stocks[0]) : [];
@@ -50,14 +50,13 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
 
     useEffect(() => {
         const fallbackHeaders = [
-            "ID", "STOCKID", "WEIGHT",
+            "STOCKID", "WEIGHT", "FANCY_COLOR", "FANCY_COLOR_INTENSITY",
             "SHAPE", "COLOR", "CLARITY", "CUT", "POLISH", "SYMMETRY", "FLUORESCENCE",
-            "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN",
-            "LAB", "CERTIFICATE_COMMENT", "CITY", "STATE", "COUNTRY",
-            "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
+            "LENGTH", "WIDTH", "HEIGHT", "SHADE", "MILKY", "EYE_CLEAN", "LAB", "CERTIFICATE_NUMBER", "CERTIFICATE_COMMENT",
+            "CITY", "STATE", "COUNTRY", "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
             "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DISCOUNT", "FINAL_PRICE",
             "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
-            "BGM", "NO_BGM", "CERTIFICATE_NUMBER",
+            "BGM", "NO_BGM"
         ];
 
 
