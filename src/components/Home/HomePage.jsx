@@ -1,98 +1,129 @@
 import React from 'react';
-import { Box, Typography, Button, Grid, Paper } from '@mui/material';
+import { Box, Typography, Button, Grid, Paper, Stack } from '@mui/material';
 import { NavLink } from 'react-router-dom';
+import { FaGem, FaChartBar, FaCubes, FaShareAlt } from 'react-icons/fa';
+
+const FeatureCard = ({ icon, title, description, to, variant = "contained" }) => (
+    <Paper elevation={4} sx={{ p: 4, borderRadius: 4, textAlign: 'center', height: '100%' }}>
+        <Box sx={{ fontSize: 40, color: 'primary.main', mb: 2 }}>{icon}</Box>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+            {title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {description}
+        </Typography>
+        <Button
+            component={NavLink}
+            to={to}
+            variant={variant}
+            size="small"
+            sx={{
+                px: 3,
+                borderRadius: '20px',
+                textTransform: 'none',
+                ...(variant === 'outlined' && {
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                        backgroundColor: 'primary.main',
+                        color: '#fff'
+                    }
+                })
+            }}
+        >
+            Go to {title}
+        </Button>
+    </Paper>
+);
 
 const HomePage = () => {
     return (
-        <Box sx={{ p: 4 }}>
+        <Box sx={{ p: { xs: 2, md: 6 }, backgroundColor: '#f9fafb', minHeight: '100vh' }}>
             {/* Hero Section */}
             <Box
                 sx={{
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: 2,
-                    p: 5,
+                    background: 'linear-gradient(to right, #007bff, #00c6ff)',
+                    borderRadius: 4,
+                    p: { xs: 4, md: 8 },
+                    color: '#fff',
                     textAlign: 'center',
-                    mb: 4,
+                    mb: 6,
+                    boxShadow: 3,
                 }}
             >
-                <Typography variant="h3" gutterBottom fontWeight="bold">
-                    Welcome to Diamond Portal
+                <FaGem size={40} />
+                <Typography variant="h3" fontWeight="bold" gutterBottom sx={{ mt: 2 }}>
+                    Diamond Inventory Portal
                 </Typography>
-                <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
-                    Manage your diamond inventory and share APIs effortlessly.
+                <Typography variant="h6" color="inherit" sx={{ mb: 3 }}>
+                    Seamlessly manage, analyze and share your diamond stock.
                 </Typography>
-                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2 }}>
+                <Stack direction="row" justifyContent="center" spacing={2} sx={{ flexWrap: 'wrap', mt: 2 }}>
                     <Button
-                        variant="contained"
-                        size="large"
                         component={NavLink}
                         to="/stock-data"
+                        variant="contained"
+                        color="secondary"
                         sx={{
-                            px: 4,
-                            py: 1.5,
-                            borderRadius: '30px',
-                            background: 'linear-gradient(to right, #007bff, #0056b3)',
-                            boxShadow: '0px 4px 12px rgba(0, 123, 255, 0.4)',
-                            transition: 'transform 0.2s ease-in-out',
-                            '&:hover': {
-                                transform: 'translateY(-2px)',
-                                background: 'linear-gradient(to right, #0056b3, #003f7f)',
-                            }
+                            px: 4, py: 1.5, borderRadius: '30px', fontWeight: 500,
+                            '&:hover': { backgroundColor: '#5a32a3' }
                         }}
                     >
                         View Stock
                     </Button>
-
                     <Button
+                        component={NavLink}
+                        to="/reports"
                         variant="outlined"
-                        size="large"
+                        sx={{
+                            px: 4, py: 1.5, borderRadius: '30px', fontWeight: 500,
+                            borderColor: '#fff', color: '#fff',
+                            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+                        }}
+                    >
+                        View Reports
+                    </Button>
+                    <Button
                         component={NavLink}
                         to="/share-api"
+                        variant="outlined"
                         sx={{
-                            px: 4,
-                            py: 1.5,
-                            borderRadius: '30px',
-                            borderColor: '#007bff',
-                            color: '#007bff',
-                            fontWeight: 500,
-                            transition: 'all 0.2s ease-in-out',
-                            '&:hover': {
-                                backgroundColor: '#007bff',
-                                color: '#fff',
-                                transform: 'translateY(-2px)',
-                                borderColor: '#0056b3'
-                            }
+                            px: 4, py: 1.5, borderRadius: '30px', fontWeight: 500,
+                            borderColor: '#fff', color: '#fff',
+                            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
                         }}
                     >
                         Share API
                     </Button>
-                </Box>
+                </Stack>
             </Box>
 
             {/* Features Section */}
             <Grid container spacing={4}>
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 3 }}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>
-                            💎 Stock Management
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                            Upload, filter, and manage your diamond inventory with precision. Our advanced tools
-                            let you control weight, shape, clarity, and more.
-                        </Typography>
-                    </Paper>
+                <Grid item xs={12} md={4}>
+                    <FeatureCard
+                        icon={<FaCubes />}
+                        title="Stock Management"
+                        description="Upload, filter, and manage your diamond inventory by shape, clarity, weight and more."
+                        to="/stock-data"
+                    />
                 </Grid>
-
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={3} sx={{ p: 3 }}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>
-                            🌐 API Sharing
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                            Seamlessly share diamond data through secure API endpoints. Perfect for B2B
-                            integration and automated inventory access.
-                        </Typography>
-                    </Paper>
+                <Grid item xs={12} md={4}>
+                    <FeatureCard
+                        icon={<FaChartBar />}
+                        title="Reports"
+                        description="Analyze hold vs. sold stock with filters and export capabilities."
+                        to="/reports"
+                        variant="outlined"
+                    />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <FeatureCard
+                        icon={<FaShareAlt />}
+                        title="API Integration"
+                        description="Securely share your diamond data with clients or partners using our API tools."
+                        to="/share-api"
+                    />
                 </Grid>
             </Grid>
         </Box>
