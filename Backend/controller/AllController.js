@@ -260,7 +260,17 @@ exports.deleteSell = async (req, res) => {
     }
 };
 
-// raval
+exports.deleteAllStock = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        await pool.query("DELETE FROM diamond_stock WHERE USER_ID = ?", [userId]);
+        res.status(200).json({ success: true, message: "Diamond All stock deleted successfully" });
+    } catch (err) {
+        console.error("Delete error:", err);
+        return res.status(500).json({ error: "Failed to delete All diamond stock" });
+    }
+}
+
 exports.addSell = async (req, res) => {
     const userId = req.user.id;
     const { id, stoneid, weight, price, finalprice, drate, amountRs, status, party } = req.body;
