@@ -9,6 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Slider from '@mui/material/Slider';
 import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, TextField, Stack, Autocomplete, Chip, Snackbar, Alert } from '@mui/material';
 import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart, CheckCircle, Newspaper } from '@mui/icons-material';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import API from '../../API';
 
 const StockData = () => {
@@ -612,6 +613,26 @@ const StockData = () => {
         return [...new Set(stocks.map(stock => stock.CERTIFICATE_NUMBER).filter(Boolean))];
     }, [stocks]);
 
+    const deleteStock = async () => {
+        const confirmed = window.confirm("Are you sure you want to delete this?");
+        if (confirmed) {
+            try {
+                const deleteResponse = await API.delete(`/delete-all-stock`, { withCredentials: true });
+
+                if (deleteResponse?.data?.message) {
+                    alert(deleteResponse.data.message);
+                }
+                try {
+                    await fetchDiamondStock();
+                } catch (err) {
+                    console.error("Error in fetchDiamondStock:", err);
+                }
+            } catch (deleteError) {
+                console.error("All DELETE failed:", deleteError);
+                alert("Failed to delete All stock: ");
+            }
+        }
+    }
 
 
 
@@ -690,6 +711,16 @@ const StockData = () => {
                             disabled={rowData.length === 0}
                         >
                             Sell
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            color="error"
+                            startIcon={<DeleteForeverIcon />}
+                            onClick={deleteStock}
+                            disabled={stocks.length === 0}
+                        >
+                            Delete All Stock
                         </Button>
                         {/* Result msg */}
                         {filteredData.length > 0 && (
