@@ -16,7 +16,8 @@ const {
     apiDiamondStock,
     ShowSellData,
     ShowHoldsData,
-    forgotPassword
+    forgotPassword,
+    deleteAllStock
 } = require("../controller/AllController");
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
@@ -40,6 +41,7 @@ router.post("/api/upload-excel", authenticateToken, uploadExcel);
 router.post("/api/add-diamondstock", authenticateToken, addDiamondStock);
 router.put("/api/update-status/:id", updateStock);
 router.delete("/api/delete-stock/:id", deleteSell);
+router.delete("/api/delete-all-stock", authenticateToken, deleteAllStock);
 router.post("/api/add-sell", authenticateToken, addSell);
 
 // Share API
