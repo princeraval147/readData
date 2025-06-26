@@ -9,6 +9,7 @@ export default function Register() {
         company: '',
         email: '',
         contact: '',
+        Address: '',
         password: '',
     });
     const [error, setError] = useState('');
@@ -43,29 +44,31 @@ export default function Register() {
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <input
-                        type="text"
-                        name="username"
-                        placeholder="Full Name"
-                        value={form.username}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
-                        required
-                    />
-                    <input
-                        type="text"
-                        name="company"
-                        placeholder="Company Name"
-                        value={form.company}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
-                        required
-                    />
+                    <span className='flex gap-4'>
+                        <input
+                            type="text"
+                            name="username"
+                            placeholder="Full Name"
+                            value={form.username}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
+                            required
+                        />
+                        <input
+                            type="text"
+                            name="company"
+                            placeholder="Company Name"
+                            value={form.company}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
+                            required
+                        />
+                    </span>
                     <input
                         type="email"
                         name="email"
                         placeholder="Email Address"
-                        value={form.email}
+                        value={form.email.toLowerCase()}
                         onChange={handleChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
                         required
@@ -88,12 +91,20 @@ export default function Register() {
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
                         required
                     />
+                    <textarea
+                        name='Address'
+                        placeholder='Company Address'
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-400 outline-none"
+                        value={form.Address}
+                        onChange={handleChange}
+                        required
+                    />
 
                     {error && <p className="text-red-500 text-sm">{error}</p>}
 
                     <button
                         type="submit"
-                        className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-md transition"
+                        className="cursor-pointer w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-md transition"
                     >
                         Register
                     </button>
