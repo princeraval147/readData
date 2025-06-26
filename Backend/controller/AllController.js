@@ -7,7 +7,7 @@ exports.register = async (req, res) => {
     const generateToken = require('../utils/generateToken');
     const token = await generateToken();
     console.log("New Token Created", token);
-    const { username, email, password, company, contact } = req.body;
+    const { username, email, password, company, Address, contact } = req.body;
 
     // Step 1: Check if email already exists
     try {
@@ -18,8 +18,8 @@ exports.register = async (req, res) => {
         }
 
         // Step 2: Insert user if email not found
-        const insertQuery = 'INSERT INTO users (USERNAME, EMAIL, PASSWORD, LAST_LOGIN, COMPANY, CONTACT) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)';
-        const [insertResult] = await pool.query(insertQuery, [username, email, password, company, contact]);
+        const insertQuery = 'INSERT INTO users (USERNAME, EMAIL, PASSWORD, LAST_LOGIN, COMPANY, ADDRESS, CONTACT) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)';
+        const [insertResult] = await pool.query(insertQuery, [username, email, password, company, Address, contact]);
         const userId = insertResult.insertId;
 
         // Step 3: Store token for new user
@@ -32,10 +32,13 @@ exports.register = async (req, res) => {
             to: 'mahesh.lex@gmail.com',
             subject: 'New User Registration - Approval Needed',
             html: `
-                    <p><strong>New user registered on the platform.</strong></p>
+                    <p><strong>New user registered on the PlatinumDiam.com</strong></p>
                     <ul>
-                        <li><strong>Username:</strong> ${username}</li>
-                        <li><strong>Email:</strong> ${email}</li>
+                        <li><strong>Username : </strong> ${username}</li>
+                        <li><strong>Email : </strong> ${email}</li>
+                        <li><strong>Company : </strong> ${company}</li>
+                        <li><strong>Address : </strong> ${Address}</li>
+                        <li><strong>Contact : </strong> ${contact}</li>
                     </ul>
                     <p>Please approve this user from Database.</p>
                 `
@@ -106,9 +109,13 @@ exports.login = async (req, res) => {
             httpOnly: true,
             sameSite: 'None',
             secure: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+            maxAge: 24 * 60 * 60 * 1000, // 24 hour // Comment then it clear cokkie when browser is closed
         });
-        // 4. Send response
+
+        // 4. Update Last login
+        await pool.query('UPDATE users SET LAST_LOGIN = CURRENT_TIMESTAMP WHERE ID = ?', [user.ID]);
+
+        // 5. Send response
         res.json({
             message: 'Login successful',
             user: {
@@ -117,9 +124,6 @@ exports.login = async (req, res) => {
                 username: user.USERNAME,
             },
         });
-
-        // 5. Update Last login
-        await pool.query('UPDATE users SET LAST_LOGIN = CURRENT_TIMESTAMP WHERE ID = ?', [user.ID]);
 
 
     } catch (err) {
