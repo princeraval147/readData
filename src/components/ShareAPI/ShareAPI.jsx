@@ -7,10 +7,6 @@ const ShareAPI = () => {
 
     const [apiData, setAPIData] = useState([]);
     const fetchAPIHistory = async () => {
-        // const response = API.get('/shared-api-data')
-        //     .then(res => setShares(res.data))
-        //     .catch(err => console.error('Error fetching shares:', err));
-        // setAPIData(response.data);
         try {
             const response = await API.get("/shared-api-data", { withCredentials: true });
             setAPIData(response.data);
