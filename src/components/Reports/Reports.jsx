@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import API from '../../API';
 import { CSVLink } from 'react-csv';
 
 
 const Reports = () => {
+
+
     const [activeTab, setActiveTab] = useState('sold');
     const [soldData, setSoldData] = useState([]);
     const [holdData, setHoldData] = useState([]);
@@ -14,7 +16,6 @@ const Reports = () => {
     const [fromDate, setFromDate] = useState(null);
     const [toDate, setToDate] = useState(null);
     const [partySearch, setPartySearch] = useState('');
-
 
 
     useEffect(() => {
@@ -229,6 +230,7 @@ const Reports = () => {
                     </button>
                 </div>
             )}
+
         </div>
     );
 };
