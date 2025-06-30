@@ -17,7 +17,14 @@ const {
     ShowSellData,
     ShowHoldsData,
     forgotPassword,
-    deleteAllStock
+    deleteAllStock,
+    checkAdmin,
+    totalUsers,
+    totalStocks,
+    PendingUsers,
+    ApproveUsers,
+    getStockByUser,
+    updateApiStatus
 } = require("../controller/AllController");
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
@@ -55,6 +62,18 @@ router.get("/api/diamond-stock", authenticateHeader, apiDiamondStock);
 // Reports
 router.get("/api/sell_data", authenticateToken, ShowSellData);
 router.get("/api/hold_data", authenticateToken, ShowHoldsData);
+
+
+
+// Admin Panel
+router.get("/api/admin/check", authenticateToken, checkAdmin);
+router.get("/api/admin/total-users", totalUsers);
+router.get("/api/admin/total-stocks", totalStocks);
+router.get("/api/admin/pending-users", PendingUsers);
+router.post("/api/admin/approve-user", authenticateToken, ApproveUsers)
+router.get("/api/admin/stock-by-user", authenticateToken, getStockByUser);
+router.put('/api/update-api-status/:id', updateApiStatus);
+
 
 
 
