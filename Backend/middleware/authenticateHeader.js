@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const authenticateHeader = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1];
-
+    console.log("API request TOKEN = ", token);
     if (!token || token.length !== 16) {
         return res.status(401).json({ message: 'Unauthorized: Invalid or missing token' });
     }
@@ -24,10 +24,15 @@ const authenticateHeader = async (req, res, next) => {
 
         // 2. Check `api_shares` table
         const [shareTokenResult] = await pool.query(`
-            SELECT ID AS shareId, USER_ID FROM api_shares WHERE TOKEN = ?
+            SELECT ID AS shareId, USER_ID, isActive FROM api_shares WHERE TOKEN = ?
             `, [token]);
 
         if (shareTokenResult.length > 0) {
+            const shared = shareTokenResult[0];
+            if (!shared.isActive) {
+                return res.status(403).json({ message: 'Access denied: API share is inactive' });
+            }
+
             req.user = {
                 id: shareTokenResult[0].USER_ID,
                 shareId: shareTokenResult[0].shareId,

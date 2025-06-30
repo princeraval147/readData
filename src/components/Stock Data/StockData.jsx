@@ -14,6 +14,52 @@ import API from '../../API';
 
 const StockData = () => {
 
+    const [formData, setFormData] = useState({
+        stockId: '',
+        barcode: '',
+        kapan: '',
+        lot: '',
+        tag: '',
+        certificate: '',
+        weight: '',
+        shape: 'RD',
+        color: 'D',
+        clarity: 'IF',
+        cut: 'EX',
+        pol: 'EX',
+        sym: 'EX',
+        length: '',
+        width: '',
+        price: '',
+        finalprice: '',
+        party: '',
+        category: ''
+    });
+
+    const resetFormData = () => {
+        setFormData({
+            stockId: '',
+            barcode: '',
+            kapan: '',
+            lot: '',
+            tag: '',
+            certificate: '',
+            weight: '',
+            shape: 'RD',
+            color: 'D',
+            clarity: 'IF',
+            cut: 'EX',
+            pol: 'EX',
+            sym: 'EX',
+            length: '',
+            width: '',
+            price: '',
+            finalprice: '',
+            party: '',
+            category: ''
+        });
+    }
+
     const barcoderef = useRef(null);
     const stockIdRef = useRef(null);
     // const partyRef = useRef(null);
@@ -229,14 +275,18 @@ const StockData = () => {
             alert("Invalid or empty data");
             return;
         }
-        // console.log("Data to be sent to DB: ", excelData[0]);
-        const sendToDB = normalizeObjectKeys(excelData);
+        const sendToDB = {
+            data: normalizeObjectKeys(excelData),
+            category: formData.category
+        };
+        console.log(sendToDB);
         setLoading(true); // Start loading
         try {
             const res = await API.post('/upload-excel', sendToDB, { withCredentials: true });
             alert(res.data.message);
             setExcelData([]);
             setStocks([]);
+            resetFormData();
         } catch (error) {
             console.error("Internal Error:", error);
             alert("Upload failed");
@@ -277,50 +327,6 @@ const StockData = () => {
     useEffect(() => {
         fetchDropDownData();
     }, []);
-
-    const [formData, setFormData] = useState({
-        stockId: '',
-        barcode: '',
-        kapan: '',
-        lot: '',
-        tag: '',
-        certificate: '',
-        weight: '',
-        shape: 'RD',
-        color: 'D',
-        clarity: 'IF',
-        cut: 'EX',
-        pol: 'EX',
-        sym: 'EX',
-        length: '',
-        width: '',
-        price: '',
-        finalprice: '',
-        party: '',
-    });
-
-    const resetFormData = () => {
-        setFormData({
-            stockId: '',
-            barcode: '',
-            kapan: '',
-            lot: '',
-            tag: '',
-            certificate: '',
-            weight: '',
-            shape: 'RD',
-            color: 'D',
-            clarity: 'IF',
-            cut: 'EX',
-            pol: 'EX',
-            sym: 'EX',
-            length: '',
-            width: '',
-            price: '',
-            finalprice: '',
-            party: '',
-        });
-    }
 
     // const handleChange = (e) => {
     //     const { name, value } = e.target;
@@ -951,6 +957,7 @@ const StockData = () => {
                                     <th>Price Per Carat</th>
                                     <th>Final Price</th>
                                     <th>Party</th>
+                                    <th>Category</th>
                                 </tr>
                                 <tr>
                                     <td>
@@ -1116,6 +1123,15 @@ const StockData = () => {
                                             value={formData.party}
                                             onChange={handleChange}
                                             ref={partyRef}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            name="category"
+                                            placeholder='Category'
+                                            value={formData.category}
+                                            onChange={handleChange}
                                         />
                                     </td>
                                     <td style={{ display: 'none' }}>
