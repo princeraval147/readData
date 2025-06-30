@@ -106,6 +106,14 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 
+// Catch-all route for undefined paths (404 Not Found)
+app.use((req, res, next) => {
+    res.status(404).json({
+        success: false,
+        message: `Route not found: ${req.originalUrl}`
+    });
+});
+
 pool.query('SELECT 1')
     .then(() => {
         console.log("✅ MySQL pool connected!");
