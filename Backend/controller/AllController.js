@@ -541,7 +541,7 @@ exports.apiDiamondStock = async (req, res) => {
 exports.shareApi = async (req, res) => {
     const ApiShareData = require('../models/apiShareData');
     const ShareAPI = require('../config/shareAPIEmail');
-    let { name, email, difference, include_category, exclude_category } = req.body;
+    let { name, email, difference, include_category, exclude_category, allow_hold } = req.body;
 
     if (include_category && typeof include_category === 'string') {
         include_category = include_category.split(',').map(item => item.trim());
@@ -564,7 +564,8 @@ exports.shareApi = async (req, res) => {
             Name: name,
             difference,
             include_category,
-            exclude_category
+            exclude_category,
+            allow_hold
         });
         const token = result.token;
 
@@ -692,15 +693,268 @@ exports.getStockByUser = async (req, res) => {
     }
 };
 
-exports.updateApiStatus = async (req, res) => {
-    const { id } = req.params;
-    const { isActive } = req.body;
+// exports.updateApiStatus = async (req, res) => {
+//     const { id } = req.params;
+//     const { isActive } = req.body;
+
+//     try {
+//         await pool.query('UPDATE api_shares SET isActive = ? WHERE ID = ?', [isActive, id]);
+//         res.json({ message: 'Status updated successfully' });
+//     } catch (error) {
+//         console.error("Database update failed", error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// };
+
+// //  Hold stock from API
+exports.updateApiStock = async (req, res) => {
+    const { stocks } = req.body;
+
+    // 🔐 Permission check
+    if (req.user.isSharedAccess && !req.user.allow_hold) {
+        return res.status(403).json({ message: 'You do not have permission to hold stock via this API' });
+    }
+
+    if (!Array.isArray(stocks) || stocks.length === 0) {
+        return res.status(400).json({ message: 'Invalid request: missing Stocks' });
+    }
+
+    const authHeader = req.headers.authorization?.trim();
+    if (!authHeader) return res.status(401).json({ error: 'Missing API token' });
+    const api_token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+    // const api_token = req.headers['authorization'] || null;
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
 
     try {
-        await pool.query('UPDATE api_shares SET isActive = ? WHERE ID = ?', [isActive, id]);
-        res.json({ message: 'Status updated successfully' });
-    } catch (error) {
-        console.error("Database update failed", error);
-        res.status(500).json({ message: 'Server error' });
+        const results = [];
+
+        for (const item of stocks) {
+            const { stock_id, certificate_number } = item;
+
+            // 1. Verify diamond belongs to user
+            const [rows] = await pool.query(
+                `SELECT * FROM diamond_stock WHERE STOCKID = ? OR CERTIFICATE_NUMBER = ?`,
+                [stock_id, certificate_number]
+            );
+            const stock = rows[0];
+            const stockUniqueID = rows[0].ID;
+            if (rows.length === 0) {
+                results.push({
+                    stock_id,
+                    certificate_number,
+                    status: "not_found_or_unauthorized"
+                });
+                continue;
+            }
+
+            // 2. Update status to HOLD
+            await pool.query(
+                `UPDATE diamond_stock SET STATUS = 'HOLD' WHERE STOCKID = ? OR CERTIFICATE_NUMBER = ? AND ID = ?`,
+                [stock_id, certificate_number, stockUniqueID]
+            );
+
+            results.push({
+                stock_id,
+                certificate_number,
+                status: "HOLD"
+            });
+
+            await pool.query(`
+            INSERT INTO api_logs 
+            (ACTION_TYPE, STOCK_ID, CERTIFICATE_NUMBER, API_TOKEN, USER_AGENT, IP_ADDRESS)
+            VALUES (?, ?, ?, ?, ?, ?)
+            `, [
+                'HOLD',                     // or 'HOLD'
+                stock_id,
+                certificate_number,
+                api_token,
+                req.headers['user-agent'],
+                req.ip,
+            ]);
+
+
+            console.log("Stock id = ", stock);
+            // Insert into sell_data
+            await pool.query(`
+      INSERT INTO sell_data (
+        ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
+        DOLLAR_RATE, RS_AMOUNT, STATUS, USER_ID
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+                stock.ID,
+                stock_id,
+                stock.WEIGHT,
+                stock.PRICE_PER_CARAT,
+                stock.FINAL_PRICE || 0,
+                stock.DOLLAR_RATE,
+                stock.RS_AMOUNT,
+                'HOLD',
+                stock.USER_ID
+            ]);
+
+        }
+
+        res.status(200).json({ updatedStock: results });
+    } catch (err) {
+        console.error("HOLD update error:", err);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+// Unhold Stock by APIs
+exports.unholdApiStock = async (req, res) => {
+    const { stocks } = req.body;
+
+    // 🔐 Permission check
+    if (req.user.isSharedAccess && !req.user.allow_hold) {
+        return res.status(403).json({ message: 'You do not have permission to unhold stock via this API' });
+    }
+
+    if (!Array.isArray(stocks) || stocks.length === 0) {
+        return res.status(400).json({ message: 'Invalid request: missing Stocks' });
+    }
+
+    try {
+        const results = [];
+
+        for (const item of stocks) {
+            const { stock_id, certificate_number } = item;
+
+            // 1. Verify diamond belongs to user
+            const [rows] = await pool.query(
+                `SELECT ID FROM diamond_stock WHERE STOCKID = ? OR CERTIFICATE_NUMBER = ?`,
+                [stock_id, certificate_number]
+            );
+            const stockUniqueID = rows[0].ID;
+            if (rows.length === 0) {
+                results.push({
+                    stock_id,
+                    certificate_number,
+                    status: "not_found_or_unauthorized"
+                });
+                continue;
+            }
+
+            // 2. Update status to HOLD
+            await pool.query(
+                `UPDATE diamond_stock SET STATUS = 'AVAILABLE' WHERE STOCKID = ? OR CERTIFICATE_NUMBER = ? AND ID = ?`,
+                [stock_id, certificate_number, stockUniqueID]
+            );
+
+            results.push({
+                stock_id,
+                certificate_number,
+                status: "AVAILABLE"
+            });
+        }
+
+        res.status(200).json({ updatedStock: results });
+    } catch (err) {
+        console.error("HOLD update error:", err);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+// Update API shares
+exports.updateApiShares = async (req, res) => {
+    const { id } = req.params;
+    const { difference, allow_hold, isActive } = req.body;
+
+    try {
+        const [result] = await pool.query(
+            `UPDATE api_shares
+             SET DIFFERENCE = ?, ALLOW_HOLD = ?, isActive = ?
+             WHERE ID = ?`,
+            [difference, allow_hold ? 1 : 0, isActive ? 1 : 0, id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Record not found.' });
+        }
+
+        return res.status(200).json({ message: 'API Share updated successfully.' });
+    } catch (err) {
+        console.error("Error updating share:", err);
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+}
+
+// Allow to sell via API
+exports.sellViaAPI = async (req, res) => {
+    const authHeader = req.headers.authorization?.trim();
+    if (!authHeader) return res.status(401).json({ error: 'Missing API token' });
+
+    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+
+    const { stock_id, price, party } = req.body;
+    if (!stock_id || !party) {
+        return res.status(400).json({ error: "Missing required fields (stock_id, party)" });
+    }
+
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    try {
+        const [rows] = await pool.query(`
+      SELECT * FROM diamond_stock WHERE STOCKID = ? AND USER_ID = (
+        SELECT USER_ID FROM api_shares WHERE TOKEN = ?
+      )
+    `, [stock_id, token]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Stock not found or unauthorized token' });
+        }
+
+        const stock = rows[0];
+
+        // Log to api_logs
+        await pool.query(`
+      INSERT INTO api_logs (
+        ACTION_TYPE, STOCK_ID, CERTIFICATE_NUMBER, WEIGHT, PRICE, FINAL_PRICE, 
+        API_TOKEN, PARTY_NAME, IP_ADDRESS, USER_AGENT, META
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+            "SOLD",
+            stock.STOCKID,
+            stock.CERTIFICATE_NUMBER || null,
+            stock.WEIGHT,
+            price || stock.PRICE_PER_CARAT,
+            stock.FINAL_PRICE || 0,
+            token,
+            party,
+            ip,
+            userAgent,
+            JSON.stringify(stock)
+        ]);
+
+        // Insert into sell_data
+        await pool.query(`
+      INSERT INTO sell_data (
+        ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
+        DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, USER_ID
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+            stock.ID,
+            stock.STOCKID,
+            stock.WEIGHT,
+            price || stock.PRICE_PER_CARAT,
+            stock.FINAL_PRICE || 0,
+            stock.DOLLAR_RATE,
+            stock.RS_AMOUNT,
+            'SOLD',
+            party,
+            stock.USER_ID
+        ]);
+
+        // Optionally delete stock
+        await pool.query(`DELETE FROM diamond_stock WHERE STOCKID = ?`, [stock_id]);
+
+        return res.status(200).json({ message: 'Stock sold successfully' });
+
+    } catch (err) {
+        console.error("Sell via API error:", err);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
