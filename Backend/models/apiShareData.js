@@ -4,8 +4,8 @@ const generateToken = require('../utils/generateToken');
 const createShare = async (data) => {
     const token = await generateToken();
     const query = `
-        INSERT INTO api_shares (USER_ID, RECIPIENT_EMAIL, NAME, DIFFERENCE, TOKEN, INCLUDE_CATEGORY, EXCLUDE_CATEGORY)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO api_shares (USER_ID, RECIPIENT_EMAIL, NAME, DIFFERENCE, TOKEN, INCLUDE_CATEGORY, EXCLUDE_CATEGORY, ALLOW_HOLD)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [result] = await pool.query(query, [
         data.userId,
@@ -15,6 +15,7 @@ const createShare = async (data) => {
         token,
         data.include_category ? JSON.stringify(data.include_category) : null,
         data.exclude_category ? JSON.stringify(data.exclude_category) : null,
+        data.allow_hold ? 1 : 0  // ✅ here: convert boolean to 1/0
     ]);
     return { ...result, token }; // this will include insertId
 };
