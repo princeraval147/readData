@@ -18,14 +18,22 @@ const ShareAPI = () => {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        difference: ""
+        difference: "",
+        include_category: "",
+        exclude_category: ""
     });
     const [status, setStatus] = useState(null); // success or error message
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         const { id, value } = e.target;
-        const newValue = id === "email" ? value.toLowerCase() : value;
+        // const newValue = id === "email" ? value.toLowerCase() : value;
+        const newValue =
+            id === "email"
+                ? value.toLowerCase()
+                : id === "include_category" || id === "exclude_category"
+                    ? value.toUpperCase()
+                    : value;
         setFormData(prev => ({
             ...prev,
             [id]: newValue
@@ -44,7 +52,17 @@ const ShareAPI = () => {
 
         setLoading(true);
         try {
-            const response = await API.post("/share-api", formData, { withCredentials: true });
+            // const response = await API.post("/share-api", formData, { withCredentials: true });
+            const response = await API.post("/share-api", {
+                ...formData,
+                include_category: formData.include_category
+                    ? formData.include_category.split(',').map(item => item.trim())
+                    : undefined,
+                exclude_category: formData.exclude_category
+                    ? formData.exclude_category.split(',').map(item => item.trim())
+                    : undefined,
+            }, { withCredentials: true });
+
             setStatus(response.data.message || 'Email sent successfully!');
             fetchAPIHistory();
             setFormData({
@@ -59,6 +77,20 @@ const ShareAPI = () => {
             setLoading(false);
         }
     };
+
+    const toggleStatus = async (id, newStatus) => {
+        try {
+            await API.put(`/update-api-status/${id}`,
+                { isActive: newStatus },
+                { withCredentials: true }
+            );
+            fetchAPIHistory();
+        } catch (error) {
+            alert("Can't update status");
+            console.error("Failed to update status:", error);
+        }
+    };
+
 
     useEffect(() => {
         fetchAPIHistory();
@@ -120,6 +152,31 @@ const ShareAPI = () => {
                             sx={{ mt: 4 }}
                             inputProps={{ max: 100 }}
                         />
+                        <TextField
+                            fullWidth
+                            label="Include Category (comma separated)"
+                            type="text"
+                            id="include_category"
+                            name="include_category"
+                            // value={(formData.include_category || "").toUpperCase()}
+                            value={formData.include_category}
+                            onChange={handleChange}
+                            placeholder="e.g. Certified,Fancy"
+                            sx={{ mt: 4 }}
+                        />
+                        <TextField
+                            fullWidth
+                            label="Exclude Category (comma separated)"
+                            type="text"
+                            id="exclude_category"
+                            name="exclude_category"
+                            value={formData.exclude_category}
+                            // value={(formData.exclude_category || "").toUpperCase()}
+                            onChange={handleChange}
+                            placeholder="e.g. Milky,Uncertified"
+                            sx={{ mt: 4 }}
+                        />
+
 
                         <br />
                         <br />
@@ -136,7 +193,7 @@ const ShareAPI = () => {
                 </form >
             </Container>
 
-            <TableContainer sx={{ maxWidth: 800, margin: 'auto', mt: 3 }}>
+            <TableContainer sx={{ maxWidth: 1000, margin: 'auto', mt: 3 }}>
                 <Typography
                     variant="h6"
                     gutterBottom
@@ -163,17 +220,32 @@ const ShareAPI = () => {
                             <TableCell>Sent At</TableCell>
                             <TableCell>Difference</TableCell>
                             <TableCell>API Key</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Action</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {apiData.map((share, index) => (
-                            <TableRow key={share.id}>
+                            <TableRow key={share.ID}>
                                 <TableCell>{index + 1}</TableCell>
                                 <TableCell>{share.NAME}</TableCell>
                                 <TableCell>{share.RECIPIENT_EMAIL}</TableCell>
                                 <TableCell>{new Date(share.SENT_AT).toLocaleDateString()}</TableCell>
                                 <TableCell>{share.DIFFERENCE}</TableCell>
                                 <TableCell>{share.TOKEN}</TableCell>
+                                <TableCell>
+                                    {share.isActive ? 'Active' : 'Inactive'}
+                                </TableCell>
+                                <TableCell>
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color={share.isActive ? 'error' : 'success'}
+                                        onClick={() => toggleStatus(share.ID, !share.isActive)}
+                                    >
+                                        {share.isActive ? 'Deactivate' : 'Activate'}
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
