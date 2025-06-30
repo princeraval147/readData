@@ -122,6 +122,7 @@ exports.login = async (req, res) => {
                 id: user.ID,
                 email: user.EMAIL,
                 username: user.USERNAME,
+                isAdmin: user.ISADMIN,
             },
         });
 
@@ -134,10 +135,8 @@ exports.login = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
     const { email, password } = req.body;
-    console.log(email, password);
     try {
         const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ?', [email]);
-        console.log(users);
         if (users.length === 0) {
             return res.status(404).json({ message: 'Email not Registered' });
         }
@@ -298,7 +297,7 @@ exports.addSell = async (req, res) => {
 };
 
 exports.uploadExcel = async (req, res) => {
-    const data = req.body;
+    const { data, category } = req.body;
     const userId = req.user.id;
     if (!Array.isArray(data) || data.length === 0) {
         return res.status(400).json({ message: 'No data received' });
@@ -347,7 +346,7 @@ exports.uploadExcel = async (req, res) => {
             GIRDLE_THIN, GIRDLE_THICK, GIRDLE_CONDITION, GIRDLE_PER, CERTIFICATE_IMAGE, 
             FLUORESCENCE_COLOR, ADMIN_ID, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM, TINGE, 
             FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, 
-            CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
+            CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE, CATEGORY
         ) VALUES ?
         `;
 
@@ -369,7 +368,8 @@ exports.uploadExcel = async (req, res) => {
             item["FLUORESCENCE_COLOR"] || '', item["ADMIN_ID"] || '', item["STATUS"] || 'AVAILABLE', item["DIAMOND_TYPE"] || '', item["IS_ACTIVE"] || '',
             item["BGM"] || '', item["NO_BGM"] || '', item["TINGE"] || '', item["FANCY_COLOR"] || '',
             item["FANCY_COLOR_INTENSITY"] || '', item["FANCY_COLOR_OVERTONE"] || '', item["CERTIFICATE_NUMBER"] || '',
-            item["CROWN_HEIGHT"] || '', item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || ''
+            item["CROWN_HEIGHT"] || '', item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || '',
+            item["CATEGORY"] = category
         ]);
         // console.log('Column Count:', values[0].length);
 
@@ -394,27 +394,130 @@ exports.getDiamondStock = async (req, res) => {
     }
 }
 
+// exports.apiDiamondStock = async (req, res) => {
+//     const userId = req.user.id;
+//     const { shareId } = req.user;
+//     try {
+//         // Get original stock
+//         const [stockRows] = await pool.query(`SELECT 
+//                 STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
+//                 HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, CITY, STATE, COUNTRY, DEPTH_PERCENT,
+//                 TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
+//                 FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
+//                 CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER
+//                 CERTIFICATE_IMAGE, FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE
+//                 IS_ACTIVE, BGM, NO_BGM, TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY
+//                 FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
+//             FROM diamond_stock WHERE USER_ID = ?`, [userId]);
+//         const [difference] = await pool.query("SELECT DIFFERENCE FROM api_shares WHERE ID = ?", [shareId]);
+
+//         // Apply dynamic price difference
+//         const updatedStock = stockRows.map(item => {
+//             const diff = parseFloat(difference[0].DIFFERENCE); // Now it's correct!
+//             const basePrice = parseFloat(item.PRICE_PER_CARAT || 0);
+//             const weight = parseFloat(item.WEIGHT || 0);
+//             const newPricePerCarat = +(basePrice * (1 + diff / 100)).toFixed(2);
+//             const newFinalPrice = +(newPricePerCarat * weight).toFixed(2);
+//             return {
+//                 ...item,
+//                 PRICE_PER_CARAT: newPricePerCarat,
+//                 FINAL_PRICE: newFinalPrice,
+//             };
+//         });
+
+//         res.json(updatedStock);
+//     } catch (err) {
+//         console.error('Error fetching shared API data:', err);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// };
+
 exports.apiDiamondStock = async (req, res) => {
     const userId = req.user.id;
     const { shareId } = req.user;
+
     try {
-        // Get original stock
-        const [stockRows] = await pool.query(`SELECT 
+        // Get shared API config
+        const [shareData] = await pool.query(
+            "SELECT DIFFERENCE, INCLUDE_CATEGORY, EXCLUDE_CATEGORY FROM api_shares WHERE ID = ?",
+            [shareId]
+        );
+
+        if (!shareData.length) return res.status(404).json({ message: 'Invalid share ID' });
+
+        const { DIFFERENCE, INCLUDE_CATEGORY, EXCLUDE_CATEGORY } = shareData[0];
+        console.log("APi_shares Data = ", shareData[0]);
+
+        let baseQuery = `
+            SELECT 
                 STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
                 HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, CITY, STATE, COUNTRY, DEPTH_PERCENT,
                 TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
                 FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
-                CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER
-                CERTIFICATE_IMAGE, FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE
-                IS_ACTIVE, BGM, NO_BGM, TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY
-                FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
-            FROM diamond_stock WHERE USER_ID = ?`, [userId]);
-        const [difference] = await pool.query("SELECT DIFFERENCE FROM api_shares WHERE ID = ?", [shareId]);
+                CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER, CERTIFICATE_IMAGE,
+                FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM,
+                TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER,
+                CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE, CATEGORY
+            FROM diamond_stock
+            WHERE USER_ID = ?
+        `;
+
+        const params = [userId];
+
+        let includeArray = [];
+        if (INCLUDE_CATEGORY) {
+            try {
+                // Whether it's already an array or stored as string
+                const parsed = typeof INCLUDE_CATEGORY === 'string'
+                    ? JSON.parse(INCLUDE_CATEGORY)
+                    : INCLUDE_CATEGORY;
+
+                includeArray = Array.isArray(parsed)
+                    ? parsed.map(cat => cat.trim().toUpperCase())
+                    : [];
+
+            } catch (e) {
+                console.warn("Invalid INCLUDE_CATEGORY JSON:", INCLUDE_CATEGORY);
+                includeArray = [];
+            }
+        }
+        if (includeArray.length > 0) {
+            const placeholders = includeArray.map(() => '?').join(', ');
+            baseQuery += ` AND CATEGORY IN (${placeholders})`;
+            params.push(...includeArray);
+            console.log("Include filter:", includeArray);
+        }
+
+        // Parse and sanitize exclude_category only if include is not set
+        let excludeArray = [];
+        if (!includeArray.length && EXCLUDE_CATEGORY) {
+            try {
+                const parsed = typeof EXCLUDE_CATEGORY === 'string'
+                    ? JSON.parse(EXCLUDE_CATEGORY)
+                    : EXCLUDE_CATEGORY;
+
+                excludeArray = Array.isArray(parsed)
+                    ? parsed.map(cat => cat.trim().toUpperCase())
+                    : [];
+            } catch (e) {
+                console.warn("Invalid EXCLUDE_CATEGORY JSON:", EXCLUDE_CATEGORY);
+                excludeArray = [];
+            }
+        }
+        if (excludeArray.length > 0) {
+            const placeholders = excludeArray.map(() => '?').join(', ');
+            baseQuery += ` AND (CATEGORY NOT IN (${placeholders}) OR CATEGORY IS NULL)`;
+            params.push(...excludeArray);
+            console.log("Exclude filter:", excludeArray);
+        }
 
 
-        // Apply dynamic price difference
+        // Execute query
+        const [stockRows] = await pool.query(baseQuery, params);
+
+        // Apply difference to pricing
+        const diff = parseFloat(DIFFERENCE || 0);
         const updatedStock = stockRows.map(item => {
-            const diff = parseFloat(difference[0].DIFFERENCE); // Now it's correct!
             const basePrice = parseFloat(item.PRICE_PER_CARAT || 0);
             const weight = parseFloat(item.WEIGHT || 0);
             const newPricePerCarat = +(basePrice * (1 + diff / 100)).toFixed(2);
@@ -433,11 +536,20 @@ exports.apiDiamondStock = async (req, res) => {
     }
 };
 
+
 // Share API
 exports.shareApi = async (req, res) => {
     const ApiShareData = require('../models/apiShareData');
     const ShareAPI = require('../config/shareAPIEmail');
-    const { name, email, difference } = req.body;
+    let { name, email, difference, include_category, exclude_category } = req.body;
+
+    if (include_category && typeof include_category === 'string') {
+        include_category = include_category.split(',').map(item => item.trim());
+    }
+    if (exclude_category && typeof exclude_category === 'string') {
+        exclude_category = exclude_category.split(',').map(item => item.trim());
+    }
+
     // const token = req.cookies.token;
     const userId = req.user.id;
 
@@ -450,7 +562,9 @@ exports.shareApi = async (req, res) => {
             userId,
             recipientEmail: email,
             Name: name,
-            difference
+            difference,
+            include_category,
+            exclude_category
         });
         const token = result.token;
 
@@ -500,3 +614,93 @@ exports.ShowHoldsData = async (req, res) => {
         res.status(500).json({ message: 'Could not fetch sell data' });
     }
 }
+
+// Admin panel
+exports.checkAdmin = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const [result] = await pool.query('SELECT ISADMIN FROM users WHERE ID = ?', [userId]);
+        const isAdmin = result.length && result[0].ISADMIN === 1;
+        if (isAdmin) {
+            return res.json({ isAdmin: true });
+        } else {
+            return res.status(403).json({ isAdmin: false, message: 'Not an admin' });
+        }
+    } catch (error) {
+        console.error("Error while Check Admin", error);
+        res.status(500).json({ message: 'Cannot check Admin' });
+    }
+};
+
+exports.totalUsers = async (req, res) => {
+    try {
+        const [response] = await pool.query("SELECT COUNT(*) AS TOTALUSERS FROM users");
+        res.json(response);
+    } catch (error) {
+        console.error("Error While count Total users");
+        res.status(500).json({ message: 'Cannot Count users' });
+    }
+}
+
+exports.totalStocks = async (req, res) => {
+    try {
+        const [response] = await pool.query("SELECT COUNT(*) AS TOTALSTOCK FROM diamond_stock");
+        res.json(response);
+    } catch (error) {
+        console.error("Error While count Total users");
+        res.status(500).json({ message: 'Cannot Count users' });
+    }
+}
+
+exports.PendingUsers = async (req, res) => {
+    try {
+        const [response] = await pool.query("SELECT * FROM users WHERE ISAPPROVED = 0");
+        res.json(response);
+    } catch (error) {
+        console.error("Error While count Total users");
+        res.status(500).json({ message: 'Cannot Count users' });
+    }
+}
+
+exports.ApproveUsers = async (req, res) => {
+    const { id } = req.body;
+    try {
+        const [response] = await pool.query("UPDATE users SET ISAPPROVED = TRUE WHERE ID = ?", id);
+        res.json(response);
+    } catch (error) {
+        console.error("Error While Approve users", error);
+        res.status(500).json({ message: 'Cannot Approve users' });
+    }
+}
+
+exports.getStockByUser = async (req, res) => {
+    try {
+        const [result] = await pool.query(`
+      SELECT 
+          u.ID AS user_id,
+          u.USERNAME,
+          COUNT(s.ID) AS stock_count
+      FROM users u
+      LEFT JOIN diamond_stock s ON u.ID = s.USER_ID
+      GROUP BY u.ID, u.USERNAME
+    `);
+
+        res.json(result);
+    } catch (error) {
+        console.error("Error fetching stock by user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+exports.updateApiStatus = async (req, res) => {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    try {
+        await pool.query('UPDATE api_shares SET isActive = ? WHERE ID = ?', [isActive, id]);
+        res.json({ message: 'Status updated successfully' });
+    } catch (error) {
+        console.error("Database update failed", error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
