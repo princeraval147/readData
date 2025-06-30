@@ -56,6 +56,10 @@ const Header = () => {
         };
     }, []);
 
+    // check Admin
+    const user = JSON.parse(localStorage.getItem('user'));
+    const isAdmin = user?.isAdmin === true || user?.isAdmin === 1;
+
 
 
 
@@ -67,7 +71,7 @@ const Header = () => {
                 {/* Left - Title */}
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Typography variant="h6" color="inherit" component={NavLink} to="/" sx={{ fontWeight: 'bold' }}>
-                        Diamond Portal
+                        Diamond Diam
                     </Typography>
                 </Box>
 
@@ -89,6 +93,13 @@ const Header = () => {
                             </Button>
                         </>
                     )}
+                    {
+                        isLogin && isAdmin && (
+                            <Button color="inherit" component={NavLink} to="/admin/dashboard">
+                                Dashboard
+                            </Button>
+                        )
+                    }
                 </Box>
 
                 {/* Right - Auth Button */}

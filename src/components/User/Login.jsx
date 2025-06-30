@@ -27,7 +27,8 @@ const Login = () => {
                 }
             );
             const data = response.data;
-
+            // store in local for check Admin
+            localStorage.setItem('user', JSON.stringify(data.user));
             window.dispatchEvent(new Event('user-logged-in')); // Tell Header to recheck
 
             alert(data.message);
@@ -42,6 +43,7 @@ const Login = () => {
             }
         }
     };
+
 
 
 
