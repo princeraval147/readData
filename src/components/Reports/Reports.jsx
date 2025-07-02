@@ -33,10 +33,9 @@ const Reports = () => {
             const itemDate = new Date(item.SELL_DATE || item.HOLD_DATE);
             const textMatch = `${item.STONE_ID} ${item.STATUS}`.toLowerCase().includes(search.toLowerCase());
 
-            const partyMatch = item.PARTY
-                ? item.PARTY.toLowerCase().includes(partySearch.toLowerCase())
-                : false;
-
+            const partyMatch = !partySearch || (
+                item.PARTY && item.PARTY.toLowerCase().includes(partySearch.toLowerCase())
+            );
             let isInRange = true;
             if (fromDate) {
                 const from = new Date(fromDate);
@@ -77,6 +76,7 @@ const Reports = () => {
         STATUS: item.STATUS,
         PARTY: item.PARTY,
     }));
+
 
 
 
@@ -187,7 +187,7 @@ const Reports = () => {
                                         {formatDate(item.SELL_DATE)}
                                     </td>
                                     <td className="px-4 py-2 border-b">{item.STATUS}</td>
-                                    <td className="px-4 py-2 border-b">{item.PARTY}</td>
+                                    <td className="px-4 py-2 border-b">{item.PARTY || "-"}</td>
                                 </tr>
                             ))
                         ) : (

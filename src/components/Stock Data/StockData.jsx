@@ -386,9 +386,6 @@ const StockData = () => {
         const isHolding = rowData.STATUS === 'HOLD';
         const newStatus = isHolding ? 'AVAILABLE' : 'HOLD';
 
-
-
-
         try {
             if (!isHolding) {
                 if (formData.party === '' || !formData.party) {
@@ -561,9 +558,14 @@ const StockData = () => {
             const rawWeight = stock.WEIGHT?.toString().replace(',', '.').trim();
             const weight = parseFloat(rawWeight) || 0;
             const withinWeight = weight >= min && weight <= max;
+
+
+            // Raval
             const matchesStockID =
                 !filters.stockID ||
                 stock.STOCKID?.toLowerCase().includes(filters.stockID.toLowerCase());
+
+
             const matchesCertificate =
                 !filters.certificate ||
                 stock.CERTIFICATE_NUMBER?.toLowerCase().includes(filters.certificate.toLowerCase());
@@ -577,6 +579,7 @@ const StockData = () => {
 
             return withinWeight && matchesStockID && matchesCertificate && matchesColor && matchesClarity && matchesShape;
         });
+        console.log("Stock id = ", filters.stockID);
 
 
         if (filters.shape || filters.color || filters.clarity || filters.stockID || filters.certificate || weightMin !== 0 || weightMax !== 25) {
@@ -649,7 +652,7 @@ const StockData = () => {
         <>
             <Box>
                 <Box mb={2}>
-                    <Stack direction="row" spacing={2} flexWrap="wrap">
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
                         <label htmlFor="import-excel">
                             <input
                                 type="file"
@@ -758,11 +761,12 @@ const StockData = () => {
                 {/* Search */}
                 <Box sx={{
                     display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
                     justifyContent: 'center',
-                    alignItems: 'center',
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    // alignItems: 'center',
                     gap: 2,
                     mb: 2,
-
                 }}>
                     {/* Weight Slider */}
                     <Box sx={{ width: 200, ml: 3 }}>
@@ -827,21 +831,13 @@ const StockData = () => {
                             getOptionLabel={(option) => option || ""}
                             value={filters.stockID}
                             onChange={(e, newValue) =>
-                                setFilters((prev) => ({ ...prev, stockId: newValue || '' }))
+                                setFilters((prev) => ({ ...prev, stockID: newValue || '' }))
                             }
                             renderInput={(params) => (
                                 <TextField {...params} label="Stock Id" />
                             )}
                             sx={{ width: 200 }}
                         />
-                        {/* <TextField
-                            label="Stock ID"
-                            size="small"
-                            value={filters.stockID}
-                            onChange={(e) =>
-                                setFilters((prev) => ({ ...prev, stockID: e.target.value.toUpperCase() }))
-                            }
-                        /> */}
                     </Box>
 
                     {/* Certificate Filter */}
@@ -859,15 +855,6 @@ const StockData = () => {
                             )}
                             sx={{ width: 200 }}
                         />
-
-                        {/* <TextField
-                            label="Certificate"
-                            size="small"
-                            value={filters.certificate}
-                            onChange={(e) =>
-                                setFilters((prev) => ({ ...prev, certificate: e.target.value }))
-                            }
-                        /> */}
                     </Box>
 
                     {/* Shape Filter */}
@@ -884,21 +871,6 @@ const StockData = () => {
                             ))}
                         </Select>
                     </FormControl>
-
-                    {/* Color Filter */}
-                    {/* <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>Color</InputLabel>
-                        <Select
-                            value={filters.color}
-                            label="Color"
-                            onChange={(e) => setFilters(prev => ({ ...prev, color: e.target.value }))}
-                        >
-                            <MenuItem value="">All Colors</MenuItem>
-                            {colorData.map((color) => (
-                                <MenuItem key={color.CID} value={color.COLOR}>{color.COLOR}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl> */}
 
                     {/* Clarity Filter */}
                     <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -923,14 +895,6 @@ const StockData = () => {
                     <Button
                         variant="outlined"
                         size="small"
-                        // onClick={() => {
-                        //     setFilters({ color: '', clarity: '', shape: '' });
-                        //     setWeightMin(0);
-                        //     setWeightMax(25);
-                        //     setWeightRange([0, 25]);
-                        //     setFilteredData(stocks);
-                        //     setError(null);
-                        // }}
                         onClick={resetFilter}
                     >
                         Reset Filters
