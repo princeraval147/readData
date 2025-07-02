@@ -24,7 +24,13 @@ const {
     PendingUsers,
     ApproveUsers,
     getStockByUser,
-    updateApiStatus
+    updateApiStatus,
+    updateApiStock,
+    unholdApiStock,
+    updateApiShares,
+    sellViaAPI,
+    addApiStock,
+    holdApiStock
 } = require("../controller/AllController");
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
@@ -54,9 +60,17 @@ router.post("/api/add-sell", authenticateToken, addSell);
 // Share API
 router.post("/api/share-api", authenticateToken, shareApi);
 router.get("/api/shared-api-data", authenticateToken, SharedAPI);
+router.put("/api/update-api-share/:id", updateApiShares);
+// router.put("/api/update-api-status/:id", updateApiStatus); // isActive
 
 // share API Stock
 router.get("/api/diamond-stock", authenticateHeader, apiDiamondStock);
+router.put("/api/hold-stock", authenticateHeader, holdApiStock);
+router.put("/api/unhold-stock", authenticateHeader, unholdApiStock);
+router.post("/api/sell-stock", authenticateHeader, sellViaAPI);
+router.post("/api/add-stock", authenticateHeader, addApiStock);
+router.post("/api/update-stock", authenticateHeader, updateApiStock);
+
 
 
 // Reports
@@ -72,7 +86,7 @@ router.get("/api/admin/total-stocks", totalStocks);
 router.get("/api/admin/pending-users", PendingUsers);
 router.post("/api/admin/approve-user", authenticateToken, ApproveUsers)
 router.get("/api/admin/stock-by-user", authenticateToken, getStockByUser);
-router.put('/api/update-api-status/:id', updateApiStatus);
+
 
 
 
