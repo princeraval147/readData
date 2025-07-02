@@ -40,9 +40,8 @@ exports.register = async (req, res) => {
                         <li><strong>Address : </strong> ${Address}</li>
                         <li><strong>Contact : </strong> ${contact}</li>
                     </ul>
-                    <p>Please approve this user from Database.</p>
+                    <p>Please approve this user from Database or Admin Panel.</p>
                 `
-
         };
         transporter.sendMail(mailOptions, (err, info) => {
             if (err) {
@@ -344,7 +343,7 @@ exports.uploadExcel = async (req, res) => {
             RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT, FINAL_PRICE, HEART_ARROW, STAR_LENGTH, 
             LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO, CULET_SIZE, CULET_CONDITION, 
             GIRDLE_THIN, GIRDLE_THICK, GIRDLE_CONDITION, GIRDLE_PER, CERTIFICATE_IMAGE, 
-            FLUORESCENCE_COLOR, ADMIN_ID, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM, TINGE, 
+            FLUORESCENCE_COLOR, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM, TINGE, 
             FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, 
             CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE, CATEGORY
         ) VALUES ?
@@ -365,7 +364,7 @@ exports.uploadExcel = async (req, res) => {
             item["KEY_TO_SYMBOL"] || '', parseNumeric(item["LW_RATIO"]), parseNumeric(item["CULET_SIZE"]),
             item["CULET_CONDITION"] || '', item["GIRDLE_THIN"] || '', item["GIRDLE_THICK"] || '',
             item["GIRDLE_CONDITION"] || '', item["GIRDLE_PER"] || '', item["CERTIFICATE_IMAGE"] || '',
-            item["FLUORESCENCE_COLOR"] || '', item["ADMIN_ID"] || '', item["STATUS"] || 'AVAILABLE', item["DIAMOND_TYPE"] || '', item["IS_ACTIVE"] || '',
+            item["FLUORESCENCE_COLOR"] || '', item["STATUS"] || 'AVAILABLE', item["DIAMOND_TYPE"] || '', item["IS_ACTIVE"] || '',
             item["BGM"] || '', item["NO_BGM"] || '', item["TINGE"] || '', item["FANCY_COLOR"] || '',
             item["FANCY_COLOR_INTENSITY"] || '', item["FANCY_COLOR_OVERTONE"] || '', item["CERTIFICATE_NUMBER"] || '',
             item["CROWN_HEIGHT"] || '', item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || '',
@@ -394,44 +393,6 @@ exports.getDiamondStock = async (req, res) => {
     }
 }
 
-// exports.apiDiamondStock = async (req, res) => {
-//     const userId = req.user.id;
-//     const { shareId } = req.user;
-//     try {
-//         // Get original stock
-//         const [stockRows] = await pool.query(`SELECT 
-//                 STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
-//                 HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, CITY, STATE, COUNTRY, DEPTH_PERCENT,
-//                 TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
-//                 FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
-//                 CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER
-//                 CERTIFICATE_IMAGE, FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE
-//                 IS_ACTIVE, BGM, NO_BGM, TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY
-//                 FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER, CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE
-//             FROM diamond_stock WHERE USER_ID = ?`, [userId]);
-//         const [difference] = await pool.query("SELECT DIFFERENCE FROM api_shares WHERE ID = ?", [shareId]);
-
-//         // Apply dynamic price difference
-//         const updatedStock = stockRows.map(item => {
-//             const diff = parseFloat(difference[0].DIFFERENCE); // Now it's correct!
-//             const basePrice = parseFloat(item.PRICE_PER_CARAT || 0);
-//             const weight = parseFloat(item.WEIGHT || 0);
-//             const newPricePerCarat = +(basePrice * (1 + diff / 100)).toFixed(2);
-//             const newFinalPrice = +(newPricePerCarat * weight).toFixed(2);
-//             return {
-//                 ...item,
-//                 PRICE_PER_CARAT: newPricePerCarat,
-//                 FINAL_PRICE: newFinalPrice,
-//             };
-//         });
-
-//         res.json(updatedStock);
-//     } catch (err) {
-//         console.error('Error fetching shared API data:', err);
-//         res.status(500).json({ message: 'Internal server error' });
-//     }
-// };
-
 exports.apiDiamondStock = async (req, res) => {
     const userId = req.user.id;
     const { shareId } = req.user;
@@ -455,7 +416,7 @@ exports.apiDiamondStock = async (req, res) => {
                 TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
                 FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
                 CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER, CERTIFICATE_IMAGE,
-                FLUORESCENCE_COLOR, ADMIN_ID, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM,
+                FLUORESCENCE_COLOR, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM,
                 TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER,
                 CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE, CATEGORY
             FROM diamond_stock
@@ -706,8 +667,97 @@ exports.getStockByUser = async (req, res) => {
 //     }
 // };
 
+// Update API shares
+exports.updateApiShares = async (req, res) => {
+    const { id } = req.params;
+    const { difference, allow_hold, allow_sell, allow_insert, allow_update, isActive } = req.body;
+
+    try {
+        const [result] = await pool.query(
+            `UPDATE api_shares
+             SET DIFFERENCE = ?, ALLOW_HOLD = ?, ALLOW_SELL = ?, ALLOW_INSERT = ?, ALLOW_UPDATE = ?, isActive = ?
+             WHERE ID = ?`,
+            [difference, allow_hold ? 1 : 0, allow_sell ? 1 : 0, allow_insert ? 1 : 0, allow_update ? 1 : 0, isActive ? 1 : 0, id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Record not found.' });
+        }
+
+        return res.status(200).json({ message: 'API Share updated successfully.' });
+    } catch (err) {
+        console.error("Error updating share:", err);
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+}
+
+
+// insert into api_logs
+const logApiAction = async ({
+    actionType,
+    stockId,
+    weight,
+    certificateNumber,
+    partyName,
+    price,
+    finalPrice,
+    apiToken,
+    req,
+    createdBy,
+    meta = {}
+}) => {
+    try {
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+        const userAgent = req.headers['user-agent'] || '';
+
+        // Use static fallback location if needed
+        let locationData = {
+            city: "",
+            region: "",
+            country: ""
+        };
+
+        try {
+            const res = await axios.get(`https://ipapi.co/${ip}/json`);
+            if (res?.data?.city) {
+                locationData = {
+                    city: res.data.city,
+                    region: res.data.region,
+                    country: res.data.country
+                };
+            }
+        } catch (err) {
+            console.warn("IP lookup failed, using default location");
+        }
+
+        await pool.query(
+            `INSERT INTO api_logs (
+        ACTION_TYPE, STOCK_ID, WEIGHT, CERTIFICATE_NUMBER, PARTY_NAME, PRICE, FINAL_PRICE,
+        API_TOKEN, TIMESTAMP, USER_AGENT, IP_ADDRESS, CREATED_BY, META, LOCATION
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
+            [
+                actionType,
+                stockId,
+                weight,
+                certificateNumber,
+                partyName,
+                price,
+                finalPrice,
+                apiToken,
+                userAgent,
+                ip,
+                createdBy,
+                JSON.stringify(meta),
+                JSON.stringify(locationData)
+            ]
+        );
+    } catch (err) {
+        console.error("Failed to insert API log:", err);
+    }
+};
+
 // //  Hold stock from API
-exports.updateApiStock = async (req, res) => {
+exports.holdApiStock = async (req, res) => {
     const { stocks } = req.body;
 
     // 🔐 Permission check
@@ -721,7 +771,7 @@ exports.updateApiStock = async (req, res) => {
 
     const authHeader = req.headers.authorization?.trim();
     if (!authHeader) return res.status(401).json({ error: 'Missing API token' });
-    const api_token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
     // const api_token = req.headers['authorization'] || null;
     const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
 
@@ -737,7 +787,8 @@ exports.updateApiStock = async (req, res) => {
                 [stock_id, certificate_number]
             );
             const stock = rows[0];
-            const stockUniqueID = rows[0].ID;
+            // console.log("Stocks = ", stock);
+            const stockUniqueID = stock.ID;
             if (rows.length === 0) {
                 results.push({
                     stock_id,
@@ -759,38 +810,15 @@ exports.updateApiStock = async (req, res) => {
                 status: "HOLD"
             });
 
-            await pool.query(`
-            INSERT INTO api_logs 
-            (ACTION_TYPE, STOCK_ID, CERTIFICATE_NUMBER, API_TOKEN, USER_AGENT, IP_ADDRESS)
-            VALUES (?, ?, ?, ?, ?, ?)
-            `, [
-                'HOLD',                     // or 'HOLD'
-                stock_id,
-                certificate_number,
-                api_token,
-                req.headers['user-agent'],
-                req.ip,
-            ]);
+            await logApiAction({
+                actionType: "HOLD",
+                stockId: stock_id,
+                certificateNumber: certificate_number || 0,
+                apiToken: token,
+                req,
+                meta: req.body // or just selected fields
+            });
 
-
-            console.log("Stock id = ", stock);
-            // Insert into sell_data
-            await pool.query(`
-      INSERT INTO sell_data (
-        ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
-        DOLLAR_RATE, RS_AMOUNT, STATUS, USER_ID
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-                stock.ID,
-                stock_id,
-                stock.WEIGHT,
-                stock.PRICE_PER_CARAT,
-                stock.FINAL_PRICE || 0,
-                stock.DOLLAR_RATE,
-                stock.RS_AMOUNT,
-                'HOLD',
-                stock.USER_ID
-            ]);
 
         }
 
@@ -856,37 +884,18 @@ exports.unholdApiStock = async (req, res) => {
     }
 };
 
-
-// Update API shares
-exports.updateApiShares = async (req, res) => {
-    const { id } = req.params;
-    const { difference, allow_hold, isActive } = req.body;
-
-    try {
-        const [result] = await pool.query(
-            `UPDATE api_shares
-             SET DIFFERENCE = ?, ALLOW_HOLD = ?, isActive = ?
-             WHERE ID = ?`,
-            [difference, allow_hold ? 1 : 0, isActive ? 1 : 0, id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Record not found.' });
-        }
-
-        return res.status(200).json({ message: 'API Share updated successfully.' });
-    } catch (err) {
-        console.error("Error updating share:", err);
-        return res.status(500).json({ message: 'Internal server error.' });
-    }
-}
-
 // Allow to sell via API
 exports.sellViaAPI = async (req, res) => {
     const authHeader = req.headers.authorization?.trim();
     if (!authHeader) return res.status(401).json({ error: 'Missing API token' });
 
     const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+
+    // 2. Check permission
+    // 🔐 Permission check
+    if (req.user.isSharedAccess && !req.user.allow_sell) {
+        return res.status(403).json({ message: 'You do not have permission to Sell stock via this API' });
+    }
 
     const { stock_id, price, party } = req.body;
     if (!stock_id || !party) {
@@ -909,25 +918,6 @@ exports.sellViaAPI = async (req, res) => {
 
         const stock = rows[0];
 
-        // Log to api_logs
-        await pool.query(`
-      INSERT INTO api_logs (
-        ACTION_TYPE, STOCK_ID, CERTIFICATE_NUMBER, WEIGHT, PRICE, FINAL_PRICE, 
-        API_TOKEN, PARTY_NAME, IP_ADDRESS, USER_AGENT, META
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-            "SOLD",
-            stock.STOCKID,
-            stock.CERTIFICATE_NUMBER || null,
-            stock.WEIGHT,
-            price || stock.PRICE_PER_CARAT,
-            stock.FINAL_PRICE || 0,
-            token,
-            party,
-            ip,
-            userAgent,
-            JSON.stringify(stock)
-        ]);
 
         // Insert into sell_data
         await pool.query(`
@@ -951,6 +941,19 @@ exports.sellViaAPI = async (req, res) => {
         // Optionally delete stock
         await pool.query(`DELETE FROM diamond_stock WHERE STOCKID = ?`, [stock_id]);
 
+        await logApiAction({
+            actionType: "SOLD",
+            stockId: stock_id,
+            weight: stock.WEIGHT || 0,
+            certificateNumber: stock.CERTIFICATE_NUMBER || 0,
+            price: stock.PRICE_PER_CARAT || 0,
+            finalPrice: stock.FINAL_PRICE || 0,
+            apiToken: token,
+            req,
+            meta: req.body // or just selected fields
+        });
+
+
         return res.status(200).json({ message: 'Stock sold successfully' });
 
     } catch (err) {
@@ -958,3 +961,154 @@ exports.sellViaAPI = async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
+// Add Stock via API
+exports.addApiStock = async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: 'Token missing' });
+
+    // 🔐 Permission check
+    if (req.user.isSharedAccess && !req.user.allow_insert) {
+        return res.status(403).json({ message: 'You do not have permission to insert stock via this API' });
+    }
+
+    try {
+        const [user] = await pool.query("SELECT user_id FROM api_shares WHERE token = ?", [token]);
+        if (!user.length) return res.status(403).json({ error: 'Invalid token' });
+
+        const userId = user[0].user_id;
+        const data = req.body;
+
+        // Extract fields from request body
+        const {
+            stockid, shape, weight, color, clarity, cut, polish, symmetry, fluorescence,
+            length, width, height, shade, milky, eye_clean, lab, certificate_comment,
+            city, state, country, depth_percent, table_percent, diamond_video, diamond_image,
+            rap_per_carat, price_per_carat, rap_price, discount, final_price, heart_arrow,
+            star_length, laser_description, growth_type, key_to_symbol, lw_ratio, culet_size,
+            culet_condition, girdle_thin, girdle_thick, girdle_condition, girdle_per,
+            certificate_image, fluorescence_color, status, diamond_type, is_active,
+            bgm, no_bgm, tinge, fancy_color, fancy_color_intensity, fancy_color_overtone,
+            certificate_number, crown_height, crown_angle, pavillion_depth, pavilion_angle,
+            category
+        } = data;
+
+        const values = [
+            userId, stockid, shape, weight, color, clarity, cut, polish, symmetry,
+            fluorescence, length, width, height, shade, milky, eye_clean, lab, certificate_comment,
+            city, state, country, depth_percent, table_percent, diamond_video, diamond_image,
+            rap_per_carat, price_per_carat, rap_price, discount, final_price, heart_arrow, star_length,
+            laser_description, growth_type, key_to_symbol, lw_ratio, culet_size, culet_condition,
+            girdle_thin, girdle_thick, girdle_condition, girdle_per, certificate_image,
+            fluorescence_color, status, diamond_type, is_active, bgm, no_bgm, tinge,
+            fancy_color, fancy_color_intensity, fancy_color_overtone, certificate_number,
+            crown_height, crown_angle, pavillion_depth, pavilion_angle, category
+        ];
+
+        // ✅ Check if stock already exists
+        const [existingStock] = await pool.query(
+            `SELECT ID FROM diamond_stock WHERE USER_ID = ? AND STOCKID = ?`,
+            [userId, stockid]
+        );
+
+        if (existingStock.length > 0) {
+            return res.status(409).json({ error: 'Duplicate entry: stock already exists' });
+        }
+
+        await pool.query(`
+            INSERT INTO diamond_stock (
+                USER_ID, STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY,
+                FLUORESCENCE, LENGTH, WIDTH, HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT,
+                CITY, STATE, COUNTRY, DEPTH_PERCENT, TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE,
+                RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT, FINAL_PRICE, HEART_ARROW, STAR_LENGTH,
+                LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO, CULET_SIZE, CULET_CONDITION,
+                GIRDLE_THIN, GIRDLE_THICK, GIRDLE_CONDITION, GIRDLE_PER, CERTIFICATE_IMAGE,
+                FLUORESCENCE_COLOR, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM, TINGE,
+                FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER,
+                CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE, CATEGORY
+            ) VALUES (${Array(59).fill('?').join(', ')})
+            `, values);
+
+        await logApiAction({
+            actionType: "INSERT",
+            stockId: stockid,
+            weight: weight,
+            certificateNumber: certificate_number,
+            price: price_per_carat,
+            finalPrice: final_price,
+            apiToken: token,
+            req,
+            createdBy: userId,
+            meta: req.body // or just selected fields
+        });
+
+
+        res.status(200).json({ success: true, message: "Stock inserted successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Update diamond stock by APIs
+exports.updateApiStock = async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: 'Token missing' });
+
+    // 🔐 Permission check
+    if (req.user.isSharedAccess && !req.user.allow_update) {
+        return res.status(403).json({ message: 'You do not have permission to Update stock via this API' });
+    }
+
+    try {
+        // Get user_id from token
+        const [user] = await pool.query("SELECT user_id FROM api_shares WHERE token = ?", [token]);
+        if (!user.length) return res.status(403).json({ error: 'Invalid token' });
+
+        const userId = user[0].user_id;
+        const { stockid } = req.body;
+        if (!stockid) return res.status(400).json({ error: 'stockid is required' });
+
+        // Prepare dynamic update fields
+        const fieldsToUpdate = { ...req.body };
+        delete fieldsToUpdate.stockid; // never allow stockid update
+
+        const updateKeys = Object.keys(fieldsToUpdate);
+        if (updateKeys.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+        const setClause = updateKeys.map(key => `${key.toUpperCase()} = ?`).join(', ');
+        const values = updateKeys.map(key => fieldsToUpdate[key]);
+
+        // Append WHERE condition values
+        values.push(userId, stockid);
+
+        const sql = `
+            UPDATE diamond_stock
+            SET ${setClause}
+            WHERE USER_ID = ? AND STOCKID = ?
+        `;
+
+        const [result] = await pool.query(sql, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Stock not found or unauthorized' });
+        }
+
+        await logApiAction({
+            actionType: "UPDATE",
+            stockId: stockid,
+            apiToken: token,
+            req,
+            createdBy: userId,
+            meta: req.body // or just selected fields
+        });
+
+        res.status(200).json({ success: true, message: 'Stock updated successfully' });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
