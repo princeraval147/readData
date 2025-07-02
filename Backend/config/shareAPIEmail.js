@@ -3,115 +3,52 @@ require('dotenv').config();
 
 const ShareAPI = async ({ name, email, token }) => {
 
-    const apiUrl = `${process.env.API_URL}`
+  const apiUrl = `${process.env.API_URL}`
+  const apiDocsUrl = "https://documenter.getpostman.com/view/46220805/2sB2xECUnL";
 
-    const mailOptions = {
-        from: '"Platinum Tech" <your-email@example.com>',
-        to: email,
-        subject: 'Your API Access to Shared Diamond Stock – Platinum Tech',
-        //         html: `
-        // <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-        //     <h2 style="color: #1e88e5;">💎 Shared Diamond Stock API Access</h2>
+  const mailOptions = {
+    from: '"Platinum Tech" <your-email@example.com>',
+    to: email,
+    subject: 'Your API Access to Shared Diamond Stock – Platinum Tech',
+    html: `
+      <div style="font-family: 'Segoe UI', Roboto, sans-serif; color: #222; max-width: 600px; margin: auto; line-height: 1.6;">
+        <div style="border-bottom: 3px solid #0077cc; padding-bottom: 12px; margin-bottom: 24px;">
+          <h2 style="color: #0077cc;">Platinum Tech</h2>
+        </div>
 
-        //     <p>Hi ${name},</p>
+        <p>Dear ${name},</p>
 
-        //     <p>You’ve been granted secure API access to shared diamond stock data via <strong>Platinum Tech</strong>.</p>
+        <p>We are pleased to inform you that secure API access to the diamond stock platform has been granted.</p>
 
-        //     <h3 style="margin-top: 24px; color: #1e88e5;">🔗 API Endpoint</h3>
-        //     <code style="background: #f4f4f4; padding: 8px; display: block; border-radius: 6px;">
-        //         GET ${apiUrl}
-        //     </code>
+        <h3 style="color: #0077cc;">API Credentials</h3>
+        <ul style="list-style: none; padding-left: 0;">
+          <li><strong>Base URL:</strong> <a href="${apiUrl}" target="_blank" style="color: #0077cc;">${apiUrl}</a></li>
+          <li><strong>Access Token:</strong> <code style="background: #f2f2f2; padding: 4px 8px; border-radius: 4px;">Bearer ${token}</code></li>
+        </ul>
 
-        //     <h3 style="margin-top: 24px; color: #1e88e5;">🔐 Authentication</h3>
-        //     <p>Use the following HTTP header for authentication:</p>
-        //     <pre style="background: #f4f4f4; padding: 12px; border-radius: 6px;">
-        // Authorization: Bearer ${token}
-        //     </pre>
+        <p>For detailed endpoint references, authentication guidelines, and request structure, please refer to the API documentation below:</p>
 
-        //     <h3 style="margin-top: 24px; color: #1e88e5;">📥 Sample Request (using fetch)</h3>
-        //     <pre style="background: #f4f4f4; padding: 12px; border-radius: 6px;">
-        // fetch("${apiUrl}", {
-        //     method: "GET",
-        //     headers: {
-        //         "Authorization": "Bearer ${token}"
-        //     }
-        // })
-        // .then(res => res.json())
-        // .then(data => console.log(data));
-        //     </pre>
+        <p><a href="${apiDocsUrl}" target="_blank" style="display: inline-block; background: #0077cc; color: #fff; padding: 10px 18px; border-radius: 4px; text-decoration: none;">View API Documentation</a></p>
 
-        //     <h3 style="margin-top: 24px; color: #1e88e5;">✅ Sample Response</h3>
-        //     <pre style="background: #f4f4f4; padding: 12px; border-radius: 6px; overflow-x: auto;">
-        // {
-        //     "success": true,
-        //     "data": [
-        //         {
-        //             "stock_id": "D123456",
-        //             "shape": "Round",
-        //             "carat": 1.02,
-        //             "color": "E",
-        //             "clarity": "VS1",
-        //             ...
-        //         }
-        //     ]
-        // }
-        //     </pre>
+        <p style="margin-top: 24px; font-size: 0.95rem;">
+          Please keep your API credentials confidential. Unauthorized sharing or misuse of the token is strictly prohibited.
+        </p>
 
-        //     <h3 style="margin-top: 24px; color: #1e88e5;">❌ Error Response</h3>
-        //     <pre style="background: #f4f4f4; padding: 12px; border-radius: 6px;">
-        // {
-        //     "success": false,
-        //     "error": "Invalid or expired token"
-        // }
-        //     </pre>
+        <p>If you have any questions or require technical support, feel free to contact our team.</p>
 
-        //     <p style="margin-top: 24px;"><strong>🔒 Keep your token safe and do not share it.</strong></p>
+        <p>Best regards,<br/>
+        <strong>Platinum Tech Team</strong><br/>
+        <a href="https://platinumsofttech.com" style="color: #0077cc;" target="_blank">www.platinumsofttech.com</a></p>
 
-        //     <hr style="margin: 30px 0;" />
+        <hr style="margin-top: 40px; border: none; border-top: 1px solid #ddd;" />
+        <p style="font-size: 0.8rem; color: #777;">
+          This is an automated message. Please do not reply to this email.
+        </p>
+      </div>
+    `
+  };
 
-        //     <p>If you need help integrating this API or have questions, please reach out.</p>
-        //     <p>🌐 <a href="https://platinumsofttech.com" target="_blank">Visit Platinum Tech</a></p>
-
-        //     <p>Best regards,<br/>
-        //     <strong>Team Platinum Tech</strong></p>
-        // </div>
-        // `
-
-        html: `
-         <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-                <p>Hi ${name},</p>
-
-                <p>You've been granted secure access to diamond stock shared via <strong>Platinum Tech</strong>.</p>
-
-                <h3 style="color: #1e88e5;">🔐 API Access Details</h3>
-                <ul>
-                    <li><strong>API Endpoint:</strong> <code>${apiUrl}</code></li>
-                    <li><strong>Authorization Header:</strong> <code>Bearer ${token}</code></li>
-                </ul>
-
-                <h4 style="margin-top: 20px;">📘 How to Use:</h4>
-                <p>To retrieve the stock data, send a <strong>GET</strong> request to the above endpoint using the following HTTP header:</p>
-
-                <pre style="background: #f4f4f4; padding: 12px; border-radius: 6px;">
-                        GET ${apiUrl}
-                        Authorization: Bearer ${token}
-                </pre>
-
-                <p><strong>Please keep your token confidential.</strong> This token provides direct access to the shared data.</p>
-
-                <hr style="margin: 30px 0;" />
-
-                <p>If you need help integrating this API or have any questions, feel free to reach out.</p>
-                <p>🔗 <a href="https://platinumsofttech.com" target="_blank">Visit our website</a></p>
-
-                <p>Best regards,<br/>
-                <strong>Team Platinum Tech</strong><br/>
-                </p>
-            </div>
-            `
-    };
-
-    await transporter.sendMail(mailOptions);
+  await transporter.sendMail(mailOptions);
 }
 
 module.exports = ShareAPI;
