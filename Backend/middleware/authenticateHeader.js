@@ -24,7 +24,7 @@ const authenticateHeader = async (req, res, next) => {
 
         // 2. Check `api_shares` table
         const [shareTokenResult] = await pool.query(`
-            SELECT ID AS shareId, USER_ID, isActive FROM api_shares WHERE TOKEN = ?
+            SELECT ID AS shareId, USER_ID, isActive, ALLOW_HOLD, ALLOW_SELL, ALLOW_INSERT, ALLOW_UPDATE FROM api_shares WHERE TOKEN = ?
             `, [token]);
 
         if (shareTokenResult.length > 0) {
@@ -36,6 +36,10 @@ const authenticateHeader = async (req, res, next) => {
             req.user = {
                 id: shareTokenResult[0].USER_ID,
                 shareId: shareTokenResult[0].shareId,
+                allow_hold: !!shared.ALLOW_HOLD,
+                allow_sell: !!shared.ALLOW_SELL,
+                allow_insert: !!shared.ALLOW_INSERT,
+                allow_update: !!shared.ALLOW_UPDATE,
                 isSharedAccess: true
             };
             return next();
