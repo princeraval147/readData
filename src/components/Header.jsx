@@ -171,6 +171,7 @@ const Header = () => {
         { label: 'Share API', to: '/share-api' },
         { label: 'Reports', to: '/reports' },
         ...(isAdmin ? [{ label: 'Dashboard', to: '/admin/dashboard' }] : []),
+        ...(isAdmin ? [{ label: 'Diamonds', to: '/diamonds' }] : []),
     ];
 
     const toggleMenu = () => setMenuOpen(!menuOpen);
