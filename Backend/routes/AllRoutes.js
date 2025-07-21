@@ -30,7 +30,10 @@ const {
     updateApiShares,
     sellViaAPI,
     addApiStock,
-    holdApiStock
+    holdApiStock,
+    AllDiamonds,
+    filterDiamonds,
+    getDiamondDetails
 } = require("../controller/AllController");
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
@@ -77,8 +80,6 @@ router.post("/api/update-stock", authenticateHeader, updateApiStock);
 router.get("/api/sell_data", authenticateToken, ShowSellData);
 router.get("/api/hold_data", authenticateToken, ShowHoldsData);
 
-
-
 // Admin Panel
 router.get("/api/admin/check", authenticateToken, checkAdmin);
 router.get("/api/admin/total-users", totalUsers);
@@ -86,6 +87,14 @@ router.get("/api/admin/total-stocks", totalStocks);
 router.get("/api/admin/pending-users", PendingUsers);
 router.post("/api/admin/approve-user", authenticateToken, ApproveUsers)
 router.get("/api/admin/stock-by-user", authenticateToken, getStockByUser);
+
+
+
+
+// Diamonds
+router.get("/api/all-diamonds", AllDiamonds);
+router.post("/api/filter-diamonds", filterDiamonds);
+router.get("/api/diamond/:id", getDiamondDetails);
 
 
 
