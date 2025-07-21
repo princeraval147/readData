@@ -15,6 +15,9 @@ import ProtectedAdminRoute from './ProtectedAdminRoute';
 import AdminPanel from './components/Admin/AdminPanel';
 import Users from './components/Admin/Users';
 import AllStocks from './components/Admin/AllStocks';
+import Diamonds from './components/Diamonds/Diamonds';
+import DiamondDetails from './components/Diamonds/DiamondDetails';
+// import DiamondGrid from './components/Diamonds/DiamondGrid';
 
 const Router = createBrowserRouter(
     createRoutesFromElements(
@@ -36,6 +39,9 @@ const Router = createBrowserRouter(
                     <Route path='admin/all-stocks' element={<AllStocks />} />
                 </Route>
             </Route>
+            <Route path='diamonds' element={<Diamonds />} />
+            <Route path='diamond-details/:id' element={<DiamondDetails />} />
+            {/* <Route path='diamonds-grid' element={<DiamondGrid />} /> */}
         </Route>
     )
 )
