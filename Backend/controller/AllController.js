@@ -1112,3 +1112,196 @@ exports.updateApiStock = async (req, res) => {
     }
 };
 
+
+
+
+
+// ---------------------------------------------------------------------------------------------
+// Diamonds
+
+
+// exports.AllDiamonds = async (req, res) => {
+//     try {
+//         const [allDiamonds] = await pool.query("select * from diamond_stock");
+//         res.status(200).json(allDiamonds);
+//     } catch (error) {
+//         console.error("Failed to fetch All Diamonds", error);
+//         res.status(500).json({ error: "Internal Server Error" });
+//     }
+// }
+
+// In AllDiamonds controller
+exports.AllDiamonds = async (req, res) => {
+    try {
+        let query = "SELECT * FROM diamond_stock WHERE 1=1";
+        const params = [];
+
+        const { shape, color, clarity, minWeight, maxWeight } = req.query;
+
+        if (shape) {
+            query += " AND SHAPE = ?";
+            params.push(shape);
+        }
+        if (color) {
+            query += " AND COLOR = ?";
+            params.push(color);
+        }
+        if (clarity) {
+            query += " AND CLARITY = ?";
+            params.push(clarity);
+        }
+        if (minWeight) {
+            query += " AND WEIGHT >= ?";
+            params.push(minWeight);
+        }
+        if (maxWeight) {
+            query += " AND WEIGHT <= ?";
+            params.push(maxWeight);
+        }
+
+        const [results] = await pool.query(query, params);
+        res.status(200).json(results);
+    } catch (error) {
+        console.error("Failed to fetch All Diamonds", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+
+exports.filterDiamonds = async (req, res) => {
+    const {
+        growthType,
+        weightMin,
+        weightMax,
+        priceMin,
+        priceMax,
+        shapes,
+        colorType,
+        colors,
+        intensity,
+        overtone,
+        clarity,
+        lab,
+        fluorescence,
+    } = req.body;
+
+    let query = "SELECT * FROM diamond_stock WHERE 1=1";
+    const params = [];
+
+    // Growth Type
+    if (growthType && growthType.length > 0) {
+        query += " AND DIAMOND_TYPE = ?";
+        // params.push(growthType);
+        params.push(growthType.map(type => type.replace(/\s/g, '_')));
+    }
+
+    // Weight
+    if (weightMin && weightMax) {
+        query += " AND weight BETWEEN ? AND ?";
+        params.push(weightMin, weightMax);
+    }
+
+    // Price
+    if (priceMin && priceMax) {
+        query += " AND PRICE_PER_CARAT BETWEEN ? AND ?";
+        params.push(priceMin, priceMax);
+    }
+
+    // Shape
+    if (shapes && shapes.length > 0) {
+        query += ` AND shape IN (${shapes.map(() => '?').join(',')})`;
+        params.push(...shapes);
+    }
+
+    // Color// Color (match color OR fancy_color)
+    if (colors && colors.length > 0) {
+        query += ` AND (color IN (${colors.map(() => '?').join(',')}) OR fancy_color IN (${colors.map(() => '?').join(',')}))`;
+        params.push(...colors, ...colors); // push colors twice (once for color, once for fancy_color)
+    }
+
+    // Intensity (only for fancy)
+    if (colorType === 'FANCY' && intensity) {
+        query += " AND fancy_intensity = ?";
+        params.push(intensity);
+    }
+
+    // Overtone (only for fancy)
+    if (colorType === 'FANCY' && overtone) {
+        query += " AND fancy_overtone = ?";
+        params.push(overtone);
+    }
+
+    // Clarity
+    if (clarity && clarity.length > 0) {
+        query += ` AND clarity IN (${clarity.map(() => '?').join(',')})`;
+        params.push(...clarity);
+    }
+
+    // Lab Certification
+    // if (lab && lab.length > 0) {
+    //     query += ` AND lab IN (${lab.map(() => '?').join(',')})`;
+    //     params.push(...lab);
+    // }
+    if (lab && lab.length > 0) {
+        if (lab.includes('CERTIFIED') && !lab.includes('NON CERTIFIED')) {
+            query += ` AND lab != 'NONE'`;
+        } else if (lab.includes('NON CERTIFIED') && !lab.includes('CERTIFIED')) {
+            query += ` AND lab = 'NONE'`;
+        }
+        // If both selected or none selected, show all (no lab filter)
+    }
+
+    // Fluorescence
+    if (fluorescence && fluorescence.length > 0) {
+        query += ` AND fluorescence IN (${fluorescence.map(() => '?').join(',')})`;
+        params.push(...fluorescence);
+    }
+
+    console.log("SQL:", query);
+    console.log("Params:", params);
+
+
+    try {
+        const [result] = await pool.query(query, params);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Server error", error);
+        res.status(500).json({ error: "Database error" });
+    }
+    // db.query(query, params, (err, result) => {
+    //     if (err) {
+    //         console.error("Error filtering diamonds:", err);
+    //         return res.status(500).json({ error: "Database error" });
+    //     }
+    //     res.status(200).json(result);
+    // });
+}
+
+exports.getDiamondDetails = async (req, res) => {
+    const { id } = req.params;
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+    try {
+        // const [rows] = await pool.query("SELECT * FROM diamond_stock WHERE ID = ?", id);
+        // const [party_detail] = await pool.query("SELECT * FROM users WHERE ID = ?", rows[0].USER_ID);
+        const [rows] = await pool.query(`
+            SELECT 
+                d.*, 
+                u.USERNAME AS party_name,
+                u.EMAIL AS party_email,
+                u.CONTACT AS party_contact
+            FROM diamond_stock d
+            LEFT JOIN users u ON d.USER_ID = u.ID
+            WHERE d.ID = ?
+        `, [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Diamond not found" });
+        }
+        res.json(rows[0])
+    } catch (error) {
+        console.error("server error : ", error);
+        res.status(500).json({ error: "Server Error" });
+    }
+}
+
+
+
