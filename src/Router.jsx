@@ -17,6 +17,7 @@ import Users from './components/Admin/Users';
 import AllStocks from './components/Admin/AllStocks';
 import Diamonds from './components/Diamonds/Diamonds';
 import DiamondDetails from './components/Diamonds/DiamondDetails';
+import ViewStock from './components/ViewStock/ViewStock';
 // import DiamondGrid from './components/Diamonds/DiamondGrid';
 
 const Router = createBrowserRouter(
@@ -24,6 +25,7 @@ const Router = createBrowserRouter(
         <Route path='/' element={<App />}>
             <Route index element={<Home />} />
             <Route path='login' element={<Login />} />
+            <Route path='view-stock' element={<ViewStock />} />
             <Route path='Register' element={<Register />} />
             <Route path='forget-password' element={<ForgetPassword />} />
             <Route path='*' element={<Error />} />

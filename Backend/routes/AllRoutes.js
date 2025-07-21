@@ -33,7 +33,8 @@ const {
     holdApiStock,
     AllDiamonds,
     filterDiamonds,
-    getDiamondDetails
+    getDiamondDetails,
+    getViewStock
 } = require("../controller/AllController");
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
@@ -87,6 +88,11 @@ router.get("/api/admin/total-stocks", totalStocks);
 router.get("/api/admin/pending-users", PendingUsers);
 router.post("/api/admin/approve-user", authenticateToken, ApproveUsers)
 router.get("/api/admin/stock-by-user", authenticateToken, getStockByUser);
+
+// View Stock
+router.get("/api/view-stock", authenticateHeader , getViewStock);
+
+
 
 
 
