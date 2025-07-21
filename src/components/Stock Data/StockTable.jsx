@@ -107,7 +107,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
                 stocks.length !== 0 &&
                 (
                     <>
-                        <TableContainer component={Paper} sx={{ maxHeight: 500 }}>
+                        <TableContainer component={Paper} sx={{ maxHeight: 550 }}>
                             <Table>
                                 <TableHead>
                                     <TableRow
