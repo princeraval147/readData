@@ -1305,3 +1305,107 @@ exports.getDiamondDetails = async (req, res) => {
 
 
 
+
+
+// View Stocks
+exports.getViewStock = async (req, res) => {
+    const userId = req.user.id;
+    const { shareId } = req.user;
+
+    try {
+        // Step 1: Get user-specific API config from `api_shares`
+        const [shareData] = await pool.query(
+            "SELECT DIFFERENCE, INCLUDE_CATEGORY, EXCLUDE_CATEGORY FROM api_shares WHERE ID = ?",
+            [shareId]
+        );
+
+        if (!shareData.length) {
+            return res.status(404).json({ message: 'Invalid share ID' });
+        }
+
+        const { DIFFERENCE, INCLUDE_CATEGORY, EXCLUDE_CATEGORY } = shareData[0];
+
+        // Step 2: Base query
+        let baseQuery = `
+            SELECT 
+                STOCKID, SHAPE, WEIGHT, COLOR, CLARITY, CUT, POLISH, SYMMETRY, FLUORESCENCE, LENGTH, WIDTH,
+                HEIGHT, SHADE, MILKY, EYE_CLEAN, LAB, CERTIFICATE_COMMENT, CITY, STATE, COUNTRY, DEPTH_PERCENT,
+                TABLE_PERCENT, DIAMOND_VIDEO, DIAMOND_IMAGE, RAP_PER_CARAT, PRICE_PER_CARAT, RAP_PRICE, DISCOUNT,
+                FINAL_PRICE, HEART_ARROW, STAR_LENGTH, LASER_DESCRIPTION, GROWTH_TYPE, KEY_TO_SYMBOL, LW_RATIO,
+                CULET_SIZE, CULET_CONDITION, GIRDLE_THIN, GIRDLE_THICK, GIRDLE_PER, CERTIFICATE_IMAGE,
+                FLUORESCENCE_COLOR, GIRDLE_CONDITION, STATUS, DIAMOND_TYPE, IS_ACTIVE, BGM, NO_BGM,
+                TINGE, FANCY_COLOR, FANCY_COLOR_INTENSITY, FANCY_COLOR_OVERTONE, CERTIFICATE_NUMBER,
+                CROWN_HEIGHT, CROWN_ANGLE, PAVILLION_DEPTH, PAVILION_ANGLE, CATEGORY
+            FROM diamond_stock
+            WHERE USER_ID = ?
+        `;
+
+        const params = [userId];
+
+        // Step 3: Apply INCLUDE_CATEGORY (if set)
+        let includeArray = [];
+        if (INCLUDE_CATEGORY) {
+            try {
+                const parsed = typeof INCLUDE_CATEGORY === 'string'
+                    ? JSON.parse(INCLUDE_CATEGORY)
+                    : INCLUDE_CATEGORY;
+
+                includeArray = Array.isArray(parsed)
+                    ? parsed.map(cat => cat.trim().toUpperCase())
+                    : [];
+            } catch (e) {
+                console.warn("Invalid INCLUDE_CATEGORY JSON:", INCLUDE_CATEGORY);
+            }
+        }
+
+        if (includeArray.length > 0) {
+            const placeholders = includeArray.map(() => '?').join(', ');
+            baseQuery += ` AND CATEGORY IN (${placeholders})`;
+            params.push(...includeArray);
+        }
+
+        // Step 4: Apply EXCLUDE_CATEGORY (if include is not set)
+        let excludeArray = [];
+        if (!includeArray.length && EXCLUDE_CATEGORY) {
+            try {
+                const parsed = typeof EXCLUDE_CATEGORY === 'string'
+                    ? JSON.parse(EXCLUDE_CATEGORY)
+                    : EXCLUDE_CATEGORY;
+
+                excludeArray = Array.isArray(parsed)
+                    ? parsed.map(cat => cat.trim().toUpperCase())
+                    : [];
+            } catch (e) {
+                console.warn("Invalid EXCLUDE_CATEGORY JSON:", EXCLUDE_CATEGORY);
+            }
+        }
+
+        if (excludeArray.length > 0) {
+            const placeholders = excludeArray.map(() => '?').join(', ');
+            baseQuery += ` AND (CATEGORY NOT IN (${placeholders}) OR CATEGORY IS NULL)`;
+            params.push(...excludeArray);
+        }
+
+        // Step 5: Execute query
+        const [stockRows] = await pool.query(baseQuery, params);
+
+        // Step 6: Apply price DIFFERENCE
+        const diff = parseFloat(DIFFERENCE || 0);
+        const updatedStock = stockRows.map(item => {
+            const basePrice = parseFloat(item.PRICE_PER_CARAT || 0);
+            const weight = parseFloat(item.WEIGHT || 0);
+            const newPricePerCarat = +(basePrice * (1 + diff / 100)).toFixed(2);
+            const newFinalPrice = +(newPricePerCarat * weight).toFixed(2);
+            return {
+                ...item,
+                PRICE_PER_CARAT: newPricePerCarat,
+                FINAL_PRICE: newFinalPrice,
+            };
+        });
+
+        res.json(updatedStock);
+    } catch (err) {
+        console.error('Error fetching view stock:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
