@@ -500,6 +500,7 @@ exports.apiDiamondStock = async (req, res) => {
 
 // Share API
 exports.shareApi = async (req, res) => {
+    const { id } = req.user;
     const ApiShareData = require('../models/apiShareData');
     const ShareAPI = require('../config/shareAPIEmail');
     let { name, email, difference, include_category, exclude_category, allow_hold } = req.body;
@@ -518,6 +519,11 @@ exports.shareApi = async (req, res) => {
     // if (!token) return res.status(401).jsson({ message: 'Authentication token missing' });
 
     try {
+
+        const query = "SELECT USERNAME FROM users WHERE ID = ?";
+        const response = await pool.query(query, [userId]);
+        const username = response[0][0]?.USERNAME || 'Unknown User';
+
         // 1. Insert into api_shares
         const result = await ApiShareData.createShare({
             userId,
@@ -531,7 +537,7 @@ exports.shareApi = async (req, res) => {
         const token = result.token;
 
         // 2. Send email
-        await ShareAPI({ name, email, token });
+        await ShareAPI({ name, email, token, username });
 
         // 3. Respond to client
         res.json({ message: 'Email sent successfully!' });
