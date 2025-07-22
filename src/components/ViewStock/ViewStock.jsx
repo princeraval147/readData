@@ -51,6 +51,7 @@ const ViewStock = () => {
                 }
             } else {
                 setError('❗ Something went wrong');
+                console.log("server error:", err);
             }
         }
 
