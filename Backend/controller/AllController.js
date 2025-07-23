@@ -407,7 +407,6 @@ exports.apiDiamondStock = async (req, res) => {
         if (!shareData.length) return res.status(404).json({ message: 'Invalid share ID' });
 
         const { DIFFERENCE, INCLUDE_CATEGORY, EXCLUDE_CATEGORY } = shareData[0];
-        console.log("APi_shares Data = ", shareData[0]);
 
         let baseQuery = `
             SELECT 
@@ -446,7 +445,6 @@ exports.apiDiamondStock = async (req, res) => {
             const placeholders = includeArray.map(() => '?').join(', ');
             baseQuery += ` AND CATEGORY IN (${placeholders})`;
             params.push(...includeArray);
-            console.log("Include filter:", includeArray);
         }
 
         // Parse and sanitize exclude_category only if include is not set
@@ -469,7 +467,6 @@ exports.apiDiamondStock = async (req, res) => {
             const placeholders = excludeArray.map(() => '?').join(', ');
             baseQuery += ` AND (CATEGORY NOT IN (${placeholders}) OR CATEGORY IS NULL)`;
             params.push(...excludeArray);
-            console.log("Exclude filter:", excludeArray);
         }
 
 
@@ -500,7 +497,6 @@ exports.apiDiamondStock = async (req, res) => {
 
 // Share API
 exports.shareApi = async (req, res) => {
-    const { id } = req.user;
     const ApiShareData = require('../models/apiShareData');
     const ShareAPI = require('../config/shareAPIEmail');
     let { name, email, difference, include_category, exclude_category, allow_hold } = req.body;
@@ -709,7 +705,8 @@ const logApiAction = async ({
     finalPrice,
     apiToken,
     req,
-    createdBy,
+    // createdBy,
+    createdByName,
     meta = {}
 }) => {
     try {
@@ -736,6 +733,17 @@ const logApiAction = async ({
             console.warn("IP lookup failed, using default location");
         }
 
+        try {
+            const getName = await pool.query("SELECT NAME FROM api_shares WHERE TOKEN = ?", [apiToken]);
+            createdByName = getName[0][0]?.NAME || 'Unknown';
+            console.log("API Call By: ", createdByName);
+        } catch (err) {
+            console.error("Failed to get creator name from API token:", err);
+            createdByName = 'Unknown';
+        }
+
+
+
         await pool.query(
             `INSERT INTO api_logs (
         ACTION_TYPE, STOCK_ID, WEIGHT, CERTIFICATE_NUMBER, PARTY_NAME, PRICE, FINAL_PRICE,
@@ -752,7 +760,7 @@ const logApiAction = async ({
                 apiToken,
                 userAgent,
                 ip,
-                createdBy,
+                createdByName,
                 JSON.stringify(meta),
                 JSON.stringify(locationData)
             ]
@@ -762,7 +770,7 @@ const logApiAction = async ({
     }
 };
 
-// //  Hold stock from API
+//  Hold stock from API
 exports.holdApiStock = async (req, res) => {
     const { stocks } = req.body;
 
@@ -792,17 +800,16 @@ exports.holdApiStock = async (req, res) => {
                 `SELECT * FROM diamond_stock WHERE STOCKID = ? OR CERTIFICATE_NUMBER = ?`,
                 [stock_id, certificate_number]
             );
-            const stock = rows[0];
-            // console.log("Stocks = ", stock);
-            const stockUniqueID = stock.ID;
+
             if (rows.length === 0) {
                 results.push({
-                    stock_id,
-                    certificate_number,
-                    status: "not_found_or_unauthorized"
+                    status: "error",
+                    message: `Stock not found for STOCKID: ${stock_id} or CERTIFICATE_NUMBER: ${certificate_number}`
                 });
                 continue;
             }
+            const stock = rows[0];
+            const stockUniqueID = stock.ID;
 
             // 2. Update status to HOLD
             await pool.query(
@@ -813,7 +820,8 @@ exports.holdApiStock = async (req, res) => {
             results.push({
                 stock_id,
                 certificate_number,
-                status: "HOLD"
+                status: "HOLD",
+                message: "Stock status updated to HOLD"
             });
 
             await logApiAction({
@@ -824,8 +832,6 @@ exports.holdApiStock = async (req, res) => {
                 req,
                 meta: req.body // or just selected fields
             });
-
-
         }
 
         res.status(200).json({ updatedStock: results });
@@ -891,82 +897,144 @@ exports.unholdApiStock = async (req, res) => {
 };
 
 // Allow to sell via API
+// exports.sellViaAPI = async (req, res) => {
+//     const authHeader = req.headers.authorization?.trim();
+//     if (!authHeader) return res.status(401).json({ error: 'Missing API token' });
+
+//     const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+
+//     // 2. Check permission
+//     // 🔐 Permission check
+//     if (req.user.isSharedAccess && !req.user.allow_sell) {
+//         return res.status(403).json({ message: 'You do not have permission to Sell stock via this API' });
+//     }
+
+//     const { stock_id, price, party } = req.body;
+//     if (!stock_id ) {
+//         return res.status(400).json({ error: "Missing required fields (stock_id)" });
+//     }
+
+//     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+//     const userAgent = req.headers['user-agent'];
+
+//     try {
+//         const [rows] = await pool.query(`
+//       SELECT * FROM diamond_stock WHERE STOCKID = ? AND USER_ID = (
+//         SELECT USER_ID FROM api_shares WHERE TOKEN = ?
+//       )
+//     `, [stock_id, token]);
+
+//         if (rows.length === 0) {
+//             return res.status(404).json({ error: 'Stock not found or unauthorized token' });
+//         }
+
+//         const stock = rows[0];
+
+
+//         // Insert into sell_data
+//         await pool.query(`
+//       INSERT INTO sell_data (
+//         ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
+//         DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, USER_ID
+//       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//     `, [
+//             stock.ID,
+//             stock.STOCKID,
+//             stock.WEIGHT,
+//             price || stock.PRICE_PER_CARAT,
+//             stock.FINAL_PRICE || 0,
+//             stock.DOLLAR_RATE,
+//             stock.RS_AMOUNT,
+//             'SOLD',
+//             party,
+//             stock.USER_ID
+//         ]);
+
+//         // Optionally delete stock
+//         await pool.query(`DELETE FROM diamond_stock WHERE STOCKID = ?`, [stock_id]);
+
+//         await logApiAction({
+//             actionType: "SOLD",
+//             stockId: stock_id,
+//             weight: stock.WEIGHT || 0,
+//             certificateNumber: stock.CERTIFICATE_NUMBER || 0,
+//             price: stock.PRICE_PER_CARAT || 0,
+//             finalPrice: stock.FINAL_PRICE || 0,
+//             apiToken: token,
+//             req,
+//             meta: req.body // or just selected fields
+//         });
+
+
+//         return res.status(200).json({ message: 'Stock sold successfully' });
+
+//     } catch (err) {
+//         console.error("Sell via API error:", err);
+//         return res.status(500).json({ error: 'Internal server error' });
+//     }
+// };
 exports.sellViaAPI = async (req, res) => {
-    const authHeader = req.headers.authorization?.trim();
-    if (!authHeader) return res.status(401).json({ error: 'Missing API token' });
-
-    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-
-    // 2. Check permission
-    // 🔐 Permission check
-    if (req.user.isSharedAccess && !req.user.allow_sell) {
-        return res.status(403).json({ message: 'You do not have permission to Sell stock via this API' });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Missing Authorization header' });
     }
 
-    const { stock_id, price, party } = req.body;
-    if (!stock_id || !party) {
-        return res.status(400).json({ error: "Missing required fields (stock_id, party)" });
-    }
+    const apiToken = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+    const { stock_id } = req.body;
 
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    if (!stock_id) {
+        return res.status(400).json({ error: 'Missing stock_id in request body' });
+    }
 
     try {
-        const [rows] = await pool.query(`
-      SELECT * FROM diamond_stock WHERE STOCKID = ? AND USER_ID = (
-        SELECT USER_ID FROM api_shares WHERE TOKEN = ?
-      )
-    `, [stock_id, token]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Stock not found or unauthorized token' });
+        // 1. Get creator name from API token
+        let createdByName = 'Unknown';
+        try {
+            const getName = await pool.query("SELECT NAME FROM api_shares WHERE TOKEN = ?", [apiToken]);
+            createdByName = getName[0][0]?.NAME || 'Unknown';
+            console.log("API Call By: ", createdByName);
+        } catch (err) {
+            console.error("Failed to get creator name from API token:", err);
         }
 
-        const stock = rows[0];
+        // 2. Get the stock by stock_id
+        const [stockRows] = await pool.query("SELECT * FROM diamond_stock WHERE STOCKID = ?", [stock_id]);
+        if (stockRows.length === 0) {
+            return res.status(404).json({ error: 'Stock not found' });
+        }
+        const stock = stockRows[0];
 
-
-        // Insert into sell_data
+        // 3. Insert into sell_data
         await pool.query(`
-      INSERT INTO sell_data (
-        ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE, 
-        DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, USER_ID
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
+            INSERT INTO sell_data (
+                ID, STONE_ID, WEIGHT, PRICE_PER_CARAT, FINAL_PRICE,
+                DOLLAR_RATE, RS_AMOUNT, STATUS, PARTY, USER_ID
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
             stock.ID,
             stock.STOCKID,
             stock.WEIGHT,
-            price || stock.PRICE_PER_CARAT,
-            stock.FINAL_PRICE || 0,
+            stock.PRICE_PER_CARAT,
+            stock.FINAL_PRICE,
             stock.DOLLAR_RATE,
             stock.RS_AMOUNT,
             'SOLD',
-            party,
+            createdByName,        // ✅ Save API caller's name as PARTY
             stock.USER_ID
         ]);
 
-        // Optionally delete stock
-        await pool.query(`DELETE FROM diamond_stock WHERE STOCKID = ?`, [stock_id]);
-
-        await logApiAction({
-            actionType: "SOLD",
-            stockId: stock_id,
-            weight: stock.WEIGHT || 0,
-            certificateNumber: stock.CERTIFICATE_NUMBER || 0,
-            price: stock.PRICE_PER_CARAT || 0,
-            finalPrice: stock.FINAL_PRICE || 0,
-            apiToken: token,
-            req,
-            meta: req.body // or just selected fields
-        });
-
+        // 4. Delete from diamond_stock
+        await pool.query("DELETE FROM diamond_stock WHERE STOCKID = ?", [stock_id]);
 
         return res.status(200).json({ message: 'Stock sold successfully' });
 
-    } catch (err) {
-        console.error("Sell via API error:", err);
+    } catch (error) {
+        console.error('SellViaAPI Error:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+
 
 
 // Add Stock via API
@@ -1045,7 +1113,6 @@ exports.addApiStock = async (req, res) => {
             finalPrice: final_price,
             apiToken: token,
             req,
-            createdBy: userId,
             meta: req.body // or just selected fields
         });
 
@@ -1106,7 +1173,6 @@ exports.updateApiStock = async (req, res) => {
             stockId: stockid,
             apiToken: token,
             req,
-            createdBy: userId,
             meta: req.body // or just selected fields
         });
 
@@ -1262,10 +1328,6 @@ exports.filterDiamonds = async (req, res) => {
         query += ` AND fluorescence IN (${fluorescence.map(() => '?').join(',')})`;
         params.push(...fluorescence);
     }
-
-    console.log("SQL:", query);
-    console.log("Params:", params);
-
 
     try {
         const [result] = await pool.query(query, params);
