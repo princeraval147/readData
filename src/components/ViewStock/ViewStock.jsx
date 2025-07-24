@@ -4,6 +4,9 @@ import StockTable from '../Stock Data/StockTable';
 import { Button } from '@mui/material';
 import { CheckCircle, Pause } from '@mui/icons-material';
 import { ShoppingCart } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
 
 const ViewStock = () => {
     const [token, setToken] = useState('');
@@ -161,6 +164,18 @@ const ViewStock = () => {
         setRowData(row);
     }, []);
 
+    // Export to Excel
+    const handleExportExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(stockData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Stock Data');
+
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const file = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(file, `StockData_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
+
+
 
 
     return (
@@ -222,6 +237,16 @@ const ViewStock = () => {
                         >
                             Sell
                         </Button>
+
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={handleExportExcel}
+                            disabled={stockData.length === 0}
+                        >
+                            📤 Export to Excel
+                        </Button>
+
                     </span>
                 </span>
 
