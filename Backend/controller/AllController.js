@@ -1036,7 +1036,6 @@ exports.sellViaAPI = async (req, res) => {
 };
 
 
-
 // Add Stock via API
 exports.addApiStock = async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
