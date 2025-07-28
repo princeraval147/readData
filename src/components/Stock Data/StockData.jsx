@@ -154,7 +154,10 @@ const StockData = () => {
         'DOCUMENT_NO': 'CERTIFICATE_NUMBER',
         'CERTIFICATE_': 'CERTIFICATE_NUMBER',
         'REPORT_NO': 'CERTIFICATE_NUMBER',
-        'LOCATION': 'CITY'
+        'Location': 'CITY',
+        'location': 'CITY',
+        'LOCATION': 'CITY',
+        'COP': 'COUNTRY'
     };
 
     const validateExcelHeaders = (sheet) => {
@@ -238,33 +241,71 @@ const StockData = () => {
 
 
     // Send to DB
+    // function normalizeObjectKeys(data) {
+    //     return data.map(obj => {
+    //         const normalized = {};
+    //         Object.entries(obj).forEach(([key, value]) => {
+    //             const cleanedKey = key
+    //                 .trim()
+    //                 .replace(/\s+/g, '_')
+    //                 .replace(/[^a-zA-Z0-9_]/g, '')
+    //                 .toUpperCase();
+    //             const dbKey = headerMapping[cleanedKey] || cleanedKey;
+    //             if (dbKey === 'AVAILABILITY') {
+    //                 const availability = (value || '').toString().trim().toUpperCase();
+    //                 if (availability === 'YES' || availability === 'G') normalized['STATUS'] = 'AVAILABLE';
+    //                 else if (availability === 'SOLD') normalized['STATUS'] = 'SOLD';
+    //                 else if (availability === 'HOLD') normalized['STATUS'] = 'HOLD';
+    //             }
+    //             normalized[dbKey] = value ?? '';
+    //         });
+    //         return normalized;
+    //     });
+    // }
     function normalizeObjectKeys(data) {
         return data.map(obj => {
             const normalized = {};
+            let tempCity = '';
+            let tempLocation = '';
+
             Object.entries(obj).forEach(([key, value]) => {
                 const cleanedKey = key
                     .trim()
                     .replace(/\s+/g, '_')
                     .replace(/[^a-zA-Z0-9_]/g, '')
                     .toUpperCase();
+
                 const dbKey = headerMapping[cleanedKey] || cleanedKey;
+                const cleanedValue = value ?? '';
+
+                // Handle AVAILABILITY -> STATUS
                 if (dbKey === 'AVAILABILITY') {
-                    const availability = (value || '').toString().trim().toUpperCase();
-                    if (availability === 'YES' || availability === 'G') normalized['STATUS'] = 'AVAILABLE';
-                    else if (availability === 'SOLD') normalized['STATUS'] = 'SOLD';
-                    else if (availability === 'HOLD') normalized['STATUS'] = 'HOLD';
+                    const availability = (cleanedValue || '').toString().trim().toUpperCase();
+                    if (availability === 'YES' || availability === 'G') {
+                        normalized['STATUS'] = 'AVAILABLE';
+                    } else if (availability === 'SOLD') {
+                        normalized['STATUS'] = 'SOLD';
+                    } else if (availability === 'HOLD') {
+                        normalized['STATUS'] = 'HOLD';
+                    }
                 }
-                normalized[dbKey] = value ?? '';
+
+                // Temporarily collect both LOCATION and CITY values
+                if (cleanedKey === 'LOCATION') {
+                    tempLocation = cleanedValue;
+                    return; // Skip adding now
+                }
+
+                if (cleanedKey === 'CITY') {
+                    tempCity = cleanedValue;
+                    return; // Skip adding now
+                }
+
+                normalized[dbKey] = cleanedValue;
             });
 
-            // // 👇 Add KAPAN, PACKET, TAG from STOCKID
-            // const stockId = normalized['STOCKID'];
-            // if (typeof stockId === 'string' && stockId.includes('-')) {
-            //     const [kapan, packet, tag = 'A'] = stockId.split('-');
-            //     normalized['KAPAN'] = kapan || '';
-            //     normalized['PACKET'] = packet || '';
-            //     normalized['TAG'] = tag || 'A';
-            // }
+            // Resolve CITY vs LOCATION
+            normalized['CITY'] = tempCity || tempLocation || '';
 
             return normalized;
         });
