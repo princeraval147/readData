@@ -208,7 +208,6 @@ const ShareAPI = () => {
                             id="exclude_category"
                             name="exclude_category"
                             value={formData.exclude_category}
-                            // value={(formData.exclude_category || "").toUpperCase()}
                             onChange={handleChange}
                             placeholder="e.g. Milky,Uncertified"
                             sx={{ mt: 4 }}
