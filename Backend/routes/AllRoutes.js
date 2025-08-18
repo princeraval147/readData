@@ -75,8 +75,6 @@ router.post("/api/sell-stock", authenticateHeader, sellViaAPI);
 router.post("/api/add-stock", authenticateHeader, addApiStock);
 router.post("/api/update-stock", authenticateHeader, updateApiStock);
 
-
-
 // Reports
 router.get("/api/sell_data", authenticateToken, ShowSellData);
 router.get("/api/hold_data", authenticateToken, ShowHoldsData);
@@ -90,7 +88,7 @@ router.post("/api/admin/approve-user", authenticateToken, ApproveUsers)
 router.get("/api/admin/stock-by-user", authenticateToken, getStockByUser);
 
 // View Stock
-router.get("/api/view-stock", authenticateHeader , getViewStock);
+router.get("/api/view-stock", authenticateHeader, getViewStock);
 
 
 
