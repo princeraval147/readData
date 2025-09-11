@@ -1,8 +1,11 @@
 import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom';
 import API from '../../API';
+import { useNotification } from '../../context/NotificationContext';
 
 const ForgetPassword = () => {
+
+    const { showMessage } = useNotification();
 
     const Navigate = useNavigate();
     const [resetData, setResetData] = useState({
@@ -26,13 +29,16 @@ const ForgetPassword = () => {
                 password: e.target.password.value,
             });
             const data = await response.data;
-            alert(data.message);
+            // alert(data.message);
+            showMessage(data.message, "success");
             Navigate('/login');
         } catch (error) {
             if (error.response && error.response.data && error.response.data.message) {
-                alert(error.response.data.message);
+                // alert(error.response.data.message);
+                showMessage(error.response.data.message);
             } else {
-                alert("Something went wrong. Please try again.");
+                // alert("Something went wrong. Please try again.");
+                showMessage("Something went wrong. Please try again.", "error");
                 console.error("Error while Reset Password : ", error);
             }
         }
