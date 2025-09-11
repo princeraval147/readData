@@ -11,8 +11,11 @@ import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Button, Tex
 import { UploadFile, SaveAlt, CloudUpload, Visibility, Pause, ShoppingCart, CheckCircle, Newspaper } from '@mui/icons-material';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import API from '../../API';
+import { useNotification } from '../../context/NotificationContext';
 
 const StockData = () => {
+
+    const { showMessage } = useNotification();
 
     const [formData, setFormData] = useState({
         stockId: '',
@@ -92,7 +95,8 @@ const StockData = () => {
         } catch (error) {
             console.error("Error fetching stock:", error);
             if (error.response?.status === 401) {
-                alert("You are not authorized. Please log in.");
+                // alert("You are not authorized. Please log in.");
+                showMessage("You are not authorized. Please log in.", "error");
                 navigate('/login');
             } else {
                 setError("Failed to fetch stock data. Please try again later.");
@@ -104,6 +108,37 @@ const StockData = () => {
 
     // handle excel data 
     const [excelData, setExcelData] = useState([]);
+
+    function parseMeasurements(measurementStr) {
+        let length = null, width = null, height = null;
+
+        if (measurementStr.includes("*")) {
+            // Example: "5.29-5.34*3.33"
+            const [lw, h] = measurementStr.split("*");
+
+            height = parseFloat(h);
+
+            if (lw.includes("-")) {
+                const [l, w] = lw.split("-");
+                length = parseFloat(l);
+                width = parseFloat(w);
+            } else {
+                // Case: "5.29*3.33" (no dash, only length & height)
+                length = parseFloat(lw);
+                width = parseFloat(lw);
+            }
+        }
+
+        return { LENGTH: length, WIDTH: width, HEIGHT: height };
+    }
+
+    // Example usage:
+    // const measurement = "5.29-5.34*3.33";
+    // const { LENGTH, WIDTH, HEIGHT } = parseMeasurements(measurement);
+
+    // console.log("Length:", LENGTH); // 5.29
+    // console.log("Width:", WIDTH);   // 5.34
+    // console.log("Height:", HEIGHT); // 3.33
 
     const headerMapping = {
         'STOCK_': 'STOCKID',
@@ -132,13 +167,14 @@ const StockData = () => {
         'GROWTH_TYPE': 'GROWTH_TYPE',
         'FANCY_COLOR': 'FANCY_COLOR',
         'FANCY_COLOR_INTENSITY': 'FANCY_COLOR_INTENSITY',
-        // Measurement1	Measurement2	Measurement3	
+        // Measurement1	Measurement2	Measurement3
+        'MEASUREMENT': 'MEASUREMENT',
         'MEASUREMENT1': 'LENGTH',
         'MEASUREMENT2': 'WIDTH',
         'MEASUREMENT3': 'HEIGHT',
-        'MEASUREMENTS_LENGTH': 'LENGTH',       //  Measurements Length
-        'MEASUREMENTS_DEPTH': 'HEIGHT', //  Measurements Depth
-        'MEASUREMENTS_WIDTH': 'WIDTH',       //  Measurements Width
+        'MEASUREMENTS_LENGTH': 'LENGTH',
+        'MEASUREMENTS_WIDTH': 'WIDTH',
+        'MEASUREMENTS_DEPTH': 'HEIGHT',
         'TABLE': 'TABLE_PERCENT',
         'DEPTH': 'DEPTH_PERCENT',
         'SYM': 'SYMMETRY',
@@ -278,6 +314,15 @@ const StockData = () => {
                 const dbKey = headerMapping[cleanedKey] || cleanedKey;
                 const cleanedValue = value ?? '';
 
+                // ✅ Special case: MEASUREMENTS → split into LENGTH, WIDTH, HEIGHT
+                if (dbKey === 'MEASUREMENT') {
+                    const { LENGTH, WIDTH, HEIGHT } = parseMeasurements(cleanedValue);
+                    if (LENGTH) normalized['LENGTH'] = LENGTH;
+                    if (WIDTH) normalized['WIDTH'] = WIDTH;
+                    if (HEIGHT) normalized['HEIGHT'] = HEIGHT;
+                    return; // skip adding MEASUREMENTS itself
+                }
+
                 // Handle AVAILABILITY -> STATUS
                 if (dbKey === 'AVAILABILITY') {
                     const availability = (cleanedValue || '').toString().trim().toUpperCase();
@@ -313,24 +358,27 @@ const StockData = () => {
 
     const uploadData = async () => {
         if (!Array.isArray(excelData) || excelData.length === 0) {
-            alert("Invalid or empty data");
+            // alert("Invalid or empty data");
+            showMessage("Invalid or empty data");
             return;
         }
         const sendToDB = {
             data: normalizeObjectKeys(excelData),
             category: formData.category
         };
-        console.log(sendToDB);
+        console.log("Send to DB = ", sendToDB);
         setLoading(true); // Start loading
         try {
             const res = await API.post('/upload-excel', sendToDB, { withCredentials: true });
-            alert(res.data.message);
+            // alert(res.data.message);
+            showMessage(res.data.message, "success");
             setExcelData([]);
             setStocks([]);
             resetFormData();
         } catch (error) {
             console.error("Internal Error:", error);
-            alert("Upload failed");
+            // alert("Upload failed");
+            showMessage("Upload failed", "error");
         } finally {
             setLoading(false);  // Stop loading
         }
@@ -404,7 +452,8 @@ const StockData = () => {
                 withCredentials: true
             });
 
-            alert("Data inserted Successfully");
+            // alert("Data inserted Successfully");
+            showMessage("Data inserted Successfully", "success");
             resetFilter();        // Reset filters and fetch updated stock
             resetFormData();      // Clear form fields
 
@@ -415,13 +464,12 @@ const StockData = () => {
 
         } catch (error) {
             console.error("Error submitting form:", error);
-            alert("Failed to submit data");
+            // alert("Failed to submit data");
+            showMessage("Failed to submit data", "error");
         }
-
     }
 
     const [rowData, setRowData] = useState([]);
-
     const handleStatus = async () => {
 
         const isHolding = rowData.STATUS === 'HOLD';
@@ -430,7 +478,8 @@ const StockData = () => {
         try {
             if (!isHolding) {
                 if (formData.party === '' || !formData.party) {
-                    alert("Please enter party name before Update Status.");
+                    // alert("Please enter party name before Update Status.");
+                    showMessage("Please enter party name before Update Status.");
                     setTimeout(() => {
                         partyRef.current.focus();
                     }, 100);
@@ -461,10 +510,12 @@ const StockData = () => {
                     stock.ID === rowData.ID ? { ...stock, STATUS: newStatus } : stock
                 )
             );
-            alert(`Status updated to ${newStatus}.`);
+            // alert(`Status updated to ${newStatus}.`);
+            showMessage(`Status updated to ${newStatus}.`, "success");
         } catch (error) {
             console.error("Error in handleStatus:", error);
-            alert("Failed to update status");
+            // alert("Failed to update status");
+            showMessage("Failed to update status", "error");
         }
     }
 
@@ -473,7 +524,8 @@ const StockData = () => {
         setUpdating(true); // Start loading
         try {
             if (formData.party === '' || !formData.party) {
-                alert("Please enter party name before sell.");
+                // alert("Please enter party name before sell.");
+                showMessage("Please enter party name before sell.");
                 setTimeout(() => {
                     partyRef.current.focus();
                 }, 100);
@@ -498,7 +550,8 @@ const StockData = () => {
                 deleteResponse = await API.delete(`/delete-stock/${rowData.ID}`);
 
                 if (deleteResponse?.data?.message) {
-                    alert(deleteResponse.data.message);
+                    // alert(deleteResponse.data.message);
+                    showMessage(deleteResponse.data.message, "success");
                 }
                 setRowData([]);
                 resetFormData();
@@ -509,11 +562,13 @@ const StockData = () => {
                 }
             } catch (deleteError) {
                 console.error("DELETE failed:", deleteError);
-                alert("Failed to delete stock: " + (deleteError?.response?.data?.error || deleteError.message));
+                // alert("Failed to delete stock: " + (deleteError?.response?.data?.error || deleteError.message));
+                showMessage("Failed to delete stock: " + (deleteError?.response?.data?.error || deleteError.message), "error");
             }
         } catch (error) {
             console.error("Error in handleSell:", error);
-            alert("Failed to sell diamond / Delete stock");
+            // alert("Failed to sell diamond / Delete stock");
+            showMessage("Failed to sell diamond / Delete stock", "error");
         } finally {
             // setLoading(false);
             setUpdating(false);
@@ -670,7 +725,8 @@ const StockData = () => {
                 const deleteResponse = await API.delete(`/delete-all-stock`, { withCredentials: true });
 
                 if (deleteResponse?.data?.message) {
-                    alert(deleteResponse.data.message);
+                    // alert(deleteResponse.data.message);
+                    showMessage(deleteResponse.data.message, "success");
                 }
                 try {
                     await fetchDiamondStock();
@@ -679,7 +735,8 @@ const StockData = () => {
                 }
             } catch (deleteError) {
                 console.error("All DELETE failed:", deleteError);
-                alert("Failed to delete All stock: ");
+                // alert("Failed to delete All stock: ");
+                showMessage("Failed to delete All stock: ", "error");
             }
         }
     }
