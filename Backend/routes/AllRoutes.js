@@ -39,7 +39,6 @@ const {
 const authenticateToken = require('../middleware/authMiddleware');
 const authenticateHeader = require('../middleware/authenticateHeader');
 
-
 // user register / login
 router.post("/api/auth/register", register);
 router.post("/api/auth/login", login);
