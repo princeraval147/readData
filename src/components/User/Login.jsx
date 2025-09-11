@@ -2,9 +2,11 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import API from '../../API'
 import { FaGem } from "react-icons/fa";
+import { useNotification } from "../../context/NotificationContext";
 
 const Login = () => {
 
+    const { showMessage } = useNotification();
     const Navigate = useNavigate();
     const [loginData, setLoginData] = useState({
         email: "",
@@ -31,14 +33,17 @@ const Login = () => {
             localStorage.setItem('user', JSON.stringify(data.user));
             window.dispatchEvent(new Event('user-logged-in')); // Tell Header to recheck
 
-            alert(data.message);
+            // alert(data.message);
+            showMessage("Login successful 🎉", "success");
             Navigate("/stock-data");
 
         } catch (error) {
             if (error.response && error.response.data && error.response.data.message) {
-                alert(error.response.data.message);
+                // alert(error.response.data.message);
+                showMessage("Upload failed ❌", "error");
             } else {
-                alert("Something went wrong. Please try again.");
+                // alert("Something went wrong. Please try again.");
+                showMessage("Upload failed ❌", "error");
                 console.error("Error while Login : ", error);
             }
         }
