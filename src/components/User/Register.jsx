@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { FaGem } from 'react-icons/fa';
 import { NavLink, useNavigate } from 'react-router-dom';
 import API from '../../API';
+import { useNotification } from '../../context/NotificationContext';
 
 export default function Register() {
+
+    const { showMessage } = useNotification();
+
     const [form, setForm] = useState({
         username: '',
         company: '',
@@ -25,7 +29,8 @@ export default function Register() {
         setError('');
         try {
             const res = await API.post('/auth/register', form);
-            alert('Registration successful!');
+            // alert('Registration successful!');
+            showMessage('Registration successful!', "success");
             Navigate('/login');
         } catch (err) {
             const msg = err.response?.data?.message || 'Registration failed';
