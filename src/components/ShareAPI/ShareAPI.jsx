@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react'
 import API from '../../API';
 import styles from './ShareAPI.module.css'
 import { Box, Button, Checkbox, Container, FormControlLabel, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { useNotification } from '../../context/NotificationContext';
 
 const ShareAPI = () => {
+
+    const { showMessage } = useNotification();
 
     const [editRowId, setEditRowId] = useState(null);
     const [editValues, setEditValues] = useState({});
@@ -129,7 +132,8 @@ const ShareAPI = () => {
             setEditValues({});
         } catch (err) {
             console.error("Update failed", err);
-            alert("Failed to update. Try again.");
+            // alert("Failed to update. Try again.");
+            showMessage("Failed to update. Try again.", "error");
         }
     };
 
