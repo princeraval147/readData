@@ -35,7 +35,8 @@ const Users = () => {
 
     return (
         <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Pending User Approvals</h2>
+            {/* <h2 className="text-xl font-semibold text-gray-800 mb-4">Pending User Approvals</h2> */}
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">All User</h2>
             <div className="overflow-x-auto bg-white rounded-2xl shadow">
                 <table className="min-w-full table-auto text-sm text-gray-700">
                     <thead className="bg-gray-100 text-gray-600 text-left">
@@ -44,6 +45,7 @@ const Users = () => {
                             <th className="p-4">Email</th>
                             <th className="p-4">Company</th>
                             <th className="p-4">Registered</th>
+                            <th className="p-4">Last Login At</th>
                             <th className="p-4">Actions</th>
                         </tr>
                     </thead>
@@ -54,14 +56,18 @@ const Users = () => {
                                 <td className="p-4">{user.EMAIL}</td>
                                 <td className="p-4">{user.COMPANY || "-"}</td>
                                 <td className="p-4">{new Date(user.REGISTER_AT).toLocaleDateString()}</td>
-                                <td className="p-4 space-x-2">
-                                    <button
-                                        onClick={() => handleAction(user.ID, true)}
-                                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                    >
-                                        Approve
-                                    </button>
-                                </td>
+                                <td className="p-4">{new Date(user.LAST_LOGIN).toLocaleDateString()}</td>
+                                {
+                                    !user.ISAPPROVED &&
+                                    <td className="p-4 space-x-2">
+                                        <button
+                                            onClick={() => handleAction(user.ID, true)}
+                                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                        >
+                                            Approve
+                                        </button>
+                                    </td>
+                                }
                             </tr>
                         ))}
                         {users.length === 0 && (
