@@ -618,7 +618,8 @@ exports.totalStocks = async (req, res) => {
 
 exports.PendingUsers = async (req, res) => {
     try {
-        const [response] = await pool.query("SELECT * FROM users WHERE ISAPPROVED = 0 ORDER BY ID DESC");
+        // const [response] = await pool.query("SELECT * FROM users WHERE ISAPPROVED = 0 ORDER BY ID DESC");
+        const [response] = await pool.query("SELECT * FROM users ORDER BY LAST_LOGIN");
         res.json(response);
     } catch (error) {
         console.error("Error While count Total users", error);
