@@ -40,10 +40,12 @@ const Login = () => {
         } catch (error) {
             if (error.response && error.response.data && error.response.data.message) {
                 // alert(error.response.data.message);
-                showMessage("Upload failed ❌", "error");
+                // showMessage("Upload failed ❌", "error");
+                showMessage(error.response.data.message, "error");
             } else {
                 // alert("Something went wrong. Please try again.");
-                showMessage("Upload failed ❌", "error");
+                // showMessage("Upload failed ❌", "error");
+                showMessage("Something Went Wrong. Please try again", "error");
                 console.error("Error while Login : ", error);
             }
         }
