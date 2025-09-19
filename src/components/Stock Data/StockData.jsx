@@ -362,8 +362,32 @@ const StockData = () => {
             showMessage("Invalid or empty data");
             return;
         }
+
+        // Stop uploading data if stock id found empty
+        const normalizedData = normalizeObjectKeys(excelData);
+        const dataToUpload = [];
+        for (let i = 0; i < normalizedData.length; i++) {
+            const row = normalizedData[i];
+            // Trim and check STOCKID
+            const stockId = row.STOCKID ? row.STOCKID.toString().trim() : '';
+            if (!stockId) {
+                if (dataToUpload.length === 0) {
+                    // showMessage(`Upload stopped: Row ${i + 1} has empty STOCKID. Nothing uploaded.`, "error");
+                    return;
+                } else {
+                    // showMessage(`Upload stopped at row ${i + 1} due to empty STOCKID. Uploaded previous ${dataToUpload.length} row(s).`, "warning");
+                    break; // Stop at first empty STOCKID
+                }
+            }
+            dataToUpload.push(row);
+        }
+        if (dataToUpload.length === 0) return; // Nothing to upload
+
+
+
         const sendToDB = {
-            data: normalizeObjectKeys(excelData),
+            // data: normalizeObjectKeys(excelData),
+            data: dataToUpload,
             category: formData.category
         };
         console.log("Send to DB = ", sendToDB);
@@ -749,8 +773,13 @@ const StockData = () => {
     return (
         <>
             <Box>
-                <Box mb={2}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
+                <Box mb={1}>
+                    <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={2}
+                        flexWrap="wrap"
+                        sx={{ display: "flex", justifyContent: "center" }}
+                    >
                         <label htmlFor="import-excel">
                             <input
                                 type="file"
@@ -864,10 +893,10 @@ const StockData = () => {
                     alignItems: { xs: 'stretch', md: 'center' },
                     // alignItems: 'center',
                     gap: 2,
-                    mb: 2,
+                    mb: 1,
                 }}>
                     {/* Weight Slider */}
-                    <Box sx={{ width: 200, ml: 3 }}>
+                    <Box sx={{ width: 150, ml: 3 }}>
                         <label style={{ fontWeight: 'bold' }}>Weight Range (ct):</label>
                         <Slider
                             value={weightRange}
@@ -934,7 +963,7 @@ const StockData = () => {
                             renderInput={(params) => (
                                 <TextField {...params} label="Stock Id" />
                             )}
-                            sx={{ width: 200 }}
+                            sx={{ width: 150 }}
                         />
                     </Box>
 
