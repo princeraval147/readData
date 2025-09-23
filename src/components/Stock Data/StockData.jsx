@@ -110,30 +110,70 @@ const StockData = () => {
     const [excelData, setExcelData] = useState([]);
 
     function parseMeasurements(measurementStr) {
+        if (!measurementStr && measurementStr !== 0) {
+            return { LENGTH: null, WIDTH: null, HEIGHT: null };
+        }
+
+        let s = String(measurementStr).trim();
+
+        // 🔹 Normalize separators and remove hidden minus signs
+        s = s
+            .replace(/×|✕/g, '*')     // unicode multiply → *
+            .replace(/[–—−]/g, '-')   // en-dash / em-dash / minus → hyphen
+            .replace(/,/g, '.')       // decimal comma → dot
+            .replace(/\s+/g, '')      // remove spaces
+            .replace(/([0-9])-/g, '$1-'); // ensure "-" is only treated as separator
+
+        // 🔹 Split explicitly on * or -
+        const parts = s.split(/[*-]/).filter(Boolean).map(n => parseFloat(n));
+
         let length = null, width = null, height = null;
 
-        if (measurementStr.includes("*")) {
-            // Example: "5.29-5.34*3.33"
-            const [lw, h] = measurementStr.split("*");
-
-            height = parseFloat(h);
-
-            if (lw.includes("-")) {
-                const [l, w] = lw.split("-");
-                length = parseFloat(l);
-                width = parseFloat(w);
+        if (parts.length >= 3) {
+            [length, width, height] = parts;
+        } else if (parts.length === 2) {
+            if (s.includes('*')) {
+                length = parts[0];
+                width = parts[0];
+                height = parts[1];
             } else {
-                // Case: "5.29*3.33" (no dash, only length & height)
-                length = parseFloat(lw);
-                width = parseFloat(lw);
+                [length, width] = parts;
             }
+        } else if (parts.length === 1) {
+            length = parts[0];
+            width = parts[0];
         }
 
         return { LENGTH: length, WIDTH: width, HEIGHT: height };
     }
 
+
+    // function parseMeasurements(measurementStr) {
+    //     let length = null, width = null, height = null;
+
+    //     if (measurementStr.includes("*")) {
+    //         // Example: "5.29-5.34*3.33"
+    //         const [lw, h] = measurementStr.split("*");
+
+    //         height = parseFloat(h);
+
+    //         if (lw.includes("-")) {
+    //             const [l, w] = lw.split("-");
+    //             length = parseFloat(l);
+    //             width = parseFloat(w);
+    //         } else {
+    //             // Case: "5.29*3.33" (no dash, only length & height)
+    //             length = parseFloat(lw);
+    //             width = parseFloat(lw);
+    //         }
+    //     }
+
+    //     return { LENGTH: length, WIDTH: width, HEIGHT: height };
+    // }
+
     // Example usage:
     // const measurement = "5.29-5.34*3.33";
+    // 4.19-4.24-2.53
     // const { LENGTH, WIDTH, HEIGHT } = parseMeasurements(measurement);
 
     // console.log("Length:", LENGTH); // 5.29
@@ -241,7 +281,6 @@ const StockData = () => {
 
         if (file) reader.readAsArrayBuffer(file);
     };
-
 
     // export to excel
     const [tableExportData, setTableExportData] = useState({ headers: [], rows: [] });
@@ -600,6 +639,7 @@ const StockData = () => {
     }
 
     const handleRowClick = useCallback((row) => {
+        console.log("Selected Row Data = ", row);
         setRowData(row);
         setFormData({
             barcode: row.BARCODE || '',
