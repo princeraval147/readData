@@ -71,7 +71,12 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     const { email, password } = req.body;
-    console.log("User Login with : ", email);
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+    const currentDate = new Date();
+
+    console.log("User Login with : ", email, "from : ", ip, "at : ", currentDate);
+
     try {
         // 1. Find user
         const [users] = await pool.query('SELECT * FROM users WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
