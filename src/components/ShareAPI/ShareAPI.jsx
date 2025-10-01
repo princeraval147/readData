@@ -107,7 +107,9 @@ const ShareAPI = () => {
             allow_sell: !!share.ALLOW_SELL,
             allow_insert: !!share.ALLOW_INSERT,
             allow_update: !!share.ALLOW_UPDATE,
-            isActive: !!share.isActive
+            isActive: !!share.isActive,
+            include_category: share.INCLUDE_CATEGORY?.join(", ") || "",
+            exclude_category: share.EXCLUDE_CATEGORY?.join(", ") || ""
         });
     };
 
@@ -124,7 +126,13 @@ const ShareAPI = () => {
                 allow_sell: editValues.allow_sell,
                 allow_insert: editValues.allow_insert,
                 allow_update: editValues.allow_update,
-                isActive: editValues.isActive
+                isActive: editValues.isActive,
+                include_category: editValues.include_category
+                    ? editValues.include_category.split(',').map(c => c.trim().toUpperCase())
+                    : [],
+                exclude_category: editValues.exclude_category
+                    ? editValues.exclude_category.split(',').map(c => c.trim().toUpperCase())
+                    : []
             }, { withCredentials: true });
 
             fetchAPIHistory();
@@ -132,13 +140,9 @@ const ShareAPI = () => {
             setEditValues({});
         } catch (err) {
             console.error("Update failed", err);
-            // alert("Failed to update. Try again.");
             showMessage("Failed to update. Try again.", "error");
         }
     };
-
-
-
 
 
     return (
@@ -287,6 +291,8 @@ const ShareAPI = () => {
                                 <TableCell>Sent At</TableCell>
                                 <TableCell>API Key</TableCell>
                                 <TableCell>Difference</TableCell>
+                                <TableCell>Include Category</TableCell>
+                                <TableCell>Exclude Category</TableCell>
                                 <TableCell>Can Hold</TableCell>
                                 <TableCell>Can Sell</TableCell>
                                 <TableCell>Can Insert</TableCell>
@@ -317,6 +323,37 @@ const ShareAPI = () => {
                                             />
                                         ) : (
                                             share.DIFFERENCE
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {editRowId === share.ID ? (
+                                            <TextField
+                                                size="small"
+                                                value={editValues.include_category}
+                                                onChange={(e) =>
+                                                    setEditValues({ ...editValues, include_category: e.target.value })
+                                                }
+                                                placeholder="e.g. Certified,Fancy"
+                                                sx={{ width: "150px" }}
+                                            />
+                                        ) : (
+                                            (share.INCLUDE_CATEGORY || []).join(", ")
+                                        )}
+                                    </TableCell>
+
+                                    <TableCell>
+                                        {editRowId === share.ID ? (
+                                            <TextField
+                                                size="small"
+                                                value={editValues.exclude_category}
+                                                onChange={(e) =>
+                                                    setEditValues({ ...editValues, exclude_category: e.target.value })
+                                                }
+                                                placeholder="e.g. Milky,Uncertified"
+                                                sx={{ width: "150px" }}
+                                            />
+                                        ) : (
+                                            (share.EXCLUDE_CATEGORY || []).join(", ")
                                         )}
                                     </TableCell>
                                     <TableCell>
@@ -384,7 +421,7 @@ const ShareAPI = () => {
                                     </TableCell>
                                     <TableCell>
                                         {editRowId === share.ID ? (
-                                            <>
+                                            <div className='w-40'>
                                                 <Button
                                                     size="small"
                                                     variant="contained"
@@ -402,7 +439,7 @@ const ShareAPI = () => {
                                                 >
                                                     Cancel
                                                 </Button>
-                                            </>
+                                            </div>
                                         ) : (
                                             <Button
                                                 size="small"
