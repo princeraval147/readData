@@ -17,7 +17,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
         "CITY", "STATE", "COUNTRY", "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
         "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DISCOUNT", "FINAL_PRICE",
         "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
-        "BGM", "NO_BGM"
+        "BGM", "NO_BGM", "CATEGORY"
     ];
 
     const allHeaders = stocks.length > 0 ? Object.keys(stocks[0]) : [];
@@ -56,7 +56,7 @@ const StockTable = React.memo(({ stocks, onRowClick, showAllColumns = false, onP
             "CITY", "STATE", "COUNTRY", "DEPTH_PERCENT", "TABLE_PERCENT", "DIAMOND_VIDEO", "DIAMOND_IMAGE",
             "RAP_PER_CARAT", "PRICE_PER_CARAT", "RAP_PRICE", "DISCOUNT", "FINAL_PRICE",
             "GROWTH_TYPE", "LW_RATIO", "CULET_SIZE", "CERTIFICATE_IMAGE", "STATUS", "DIAMOND_TYPE", "IS_ACTIVE",
-            "BGM", "NO_BGM"
+            "BGM", "NO_BGM", "CATEGORY"
         ];
 
 
