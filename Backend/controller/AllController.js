@@ -373,7 +373,10 @@ exports.uploadExcel = async (req, res) => {
             item["BGM"] || '', item["NO_BGM"] || '', item["TINGE"] || '', item["FANCY_COLOR"] || '',
             item["FANCY_COLOR_INTENSITY"] || '', item["FANCY_COLOR_OVERTONE"] || '', item["CERTIFICATE_NUMBER"] || '',
             item["CROWN_HEIGHT"] || '', item["CROWN_ANGLE"] || '', item["PAVILLION_DEPTH"] || '', item["PAVILION_ANGLE"] || '',
-            item["CATEGORY"] = category
+            // item["CATEGORY"] = category
+            item["CATEGORY"] !== undefined && item["CATEGORY"] !== null && item["CATEGORY"] !== ""
+                ? item["CATEGORY"]
+                : category
         ]);
         // console.log('Column Count:', values[0].length);
 
