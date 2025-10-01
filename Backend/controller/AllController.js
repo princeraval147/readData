@@ -678,14 +678,40 @@ exports.getStockByUser = async (req, res) => {
 // Update API shares
 exports.updateApiShares = async (req, res) => {
     const { id } = req.params;
-    const { difference, allow_hold, allow_sell, allow_insert, allow_update, isActive } = req.body;
+    const {
+        difference,
+        include_category,
+        exclude_category,
+        allow_hold,
+        allow_sell,
+        allow_insert,
+        allow_update,
+        isActive
+    } = req.body;
 
     try {
         const [result] = await pool.query(
             `UPDATE api_shares
-             SET DIFFERENCE = ?, ALLOW_HOLD = ?, ALLOW_SELL = ?, ALLOW_INSERT = ?, ALLOW_UPDATE = ?, isActive = ?
+             SET DIFFERENCE = ?,
+                 INCLUDE_CATEGORY = ?,
+                 EXCLUDE_CATEGORY = ?,
+                 ALLOW_HOLD = ?,
+                 ALLOW_SELL = ?,
+                 ALLOW_INSERT = ?,
+                 ALLOW_UPDATE = ?,
+                 isActive = ?
              WHERE ID = ?`,
-            [difference, allow_hold ? 1 : 0, allow_sell ? 1 : 0, allow_insert ? 1 : 0, allow_update ? 1 : 0, isActive ? 1 : 0, id]
+            [
+                difference ?? null,
+                include_category ? JSON.stringify(include_category) : JSON.stringify([]),
+                exclude_category ? JSON.stringify(exclude_category) : JSON.stringify([]),
+                allow_hold ? 1 : 0,
+                allow_sell ? 1 : 0,
+                allow_insert ? 1 : 0,
+                allow_update ? 1 : 0,
+                isActive ? 1 : 0,
+                id
+            ]
         );
 
         if (result.affectedRows === 0) {
@@ -697,8 +723,7 @@ exports.updateApiShares = async (req, res) => {
         console.error("Error updating share:", err);
         return res.status(500).json({ message: 'Internal server error.' });
     }
-}
-
+};
 
 // insert into api_logs
 const logApiAction = async ({
