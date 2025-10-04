@@ -118,7 +118,7 @@ const StockData = () => {
 
         // 🔹 Normalize separators and remove hidden minus signs
         s = s
-            .replace(/×|✕/g, '*')     // unicode multiply → *
+            .replace(/×|✕|x/g, '*')     // unicode multiply → *
             .replace(/[–—−]/g, '-')   // en-dash / em-dash / minus → hyphen
             .replace(/,/g, '.')       // decimal comma → dot
             .replace(/\s+/g, '')      // remove spaces
@@ -354,7 +354,7 @@ const StockData = () => {
                 const cleanedValue = value ?? '';
 
                 // ✅ Special case: MEASUREMENTS → split into LENGTH, WIDTH, HEIGHT
-                if (dbKey === 'MEASUREMENT') {
+                if (dbKey === 'MEASUREMENT' || dbKey === 'MEASUREMENTS') {
                     const { LENGTH, WIDTH, HEIGHT } = parseMeasurements(cleanedValue);
                     if (LENGTH) normalized['LENGTH'] = LENGTH;
                     if (WIDTH) normalized['WIDTH'] = WIDTH;
