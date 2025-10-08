@@ -202,6 +202,7 @@ const StockData = () => {
         'IMAGE_LINK_5': 'DIAMOND_IMAGE',
         'IMAGE_LINK_6': 'DIAMOND_IMAGE',
         'CERTIFICATE_URL': 'CERTIFICATE_IMAGE',
+        'CERTFILE': 'CERTIFICATE_IMAGE',
         'CERT_COMMENT': 'CERTIFICATE_COMMENT',
         'TREATMENT': 'GROWTH_TYPE',
         'GROWTH_TYPE': 'GROWTH_TYPE',
@@ -209,6 +210,7 @@ const StockData = () => {
         'FANCY_COLOR_INTENSITY': 'FANCY_COLOR_INTENSITY',
         // Measurement1	Measurement2	Measurement3
         'MEASUREMENT': 'MEASUREMENT',
+        'MEASUREMENTS': 'MEASUREMENT',
         'MEASUREMENT1': 'LENGTH',
         'MEASUREMENT2': 'WIDTH',
         'MEASUREMENT3': 'HEIGHT',
@@ -230,8 +232,6 @@ const StockData = () => {
         'DOCUMENT_NO': 'CERTIFICATE_NUMBER',
         'CERTIFICATE_': 'CERTIFICATE_NUMBER',
         'REPORT_NO': 'CERTIFICATE_NUMBER',
-        'Location': 'CITY',
-        'location': 'CITY',
         'LOCATION': 'CITY',
         'COP': 'COUNTRY'
     };
