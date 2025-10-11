@@ -17,6 +17,7 @@ const StockData = () => {
 
     const { showMessage } = useNotification();
 
+    const [excelData, setExcelData] = useState([]);
     const [formData, setFormData] = useState({
         stockId: '',
         barcode: '',
@@ -106,8 +107,6 @@ const StockData = () => {
         }
     }
 
-    // handle excel data 
-    const [excelData, setExcelData] = useState([]);
 
     function parseMeasurements(measurementStr) {
         if (!measurementStr && measurementStr !== 0) {
@@ -191,6 +190,25 @@ const StockData = () => {
     // console.log("Length:", LENGTH); // 5.29
     // console.log("Width:", WIDTH);   // 5.34
     // console.log("Height:", HEIGHT); // 3.33
+
+    // Seprate color to color intensity
+    function parseColor(colorStr) {
+        if (!colorStr) return { fancy_color: null, fancy_color_intensity: null };
+
+        const s = colorStr.trim().toUpperCase();
+        if (!s) return { fancy_color: null, fancy_color_intensity: null };
+
+        const parts = s.split(/\s+/);
+        if (parts.length === 0) return { fancy_color: null, fancy_color_intensity: null };
+
+        const fancy_color = parts[parts.length - 1];
+        const fancy_color_intensity = parts.slice(0, -1).join(' ') || null;
+
+        // Exclude single-letter grades
+        if (/^[A-Z]$/.test(fancy_color)) return { fancy_color: null, fancy_color_intensity: null };
+
+        return { fancy_color, fancy_color_intensity };
+    }
 
     const headerMapping = {
         'STOCK_': 'STOCKID',
@@ -374,12 +392,34 @@ const StockData = () => {
                     return; // skip adding MEASUREMENTS itself
                 }
 
+                if (dbKey === 'COLOR') {
+                    const { fancy_color, fancy_color_intensity } = parseColor(cleanedValue);
+                    console.log("Uploading = ", fancy_color, " & ", fancy_color_intensity);
+
+                    if (fancy_color) {
+                        // This is a fancy color → split
+                        normalized['FANCY_COLOR'] = fancy_color;
+                        normalized['FANCY_COLOR_INTENSITY'] = fancy_color_intensity;
+
+                        // Set original COLOR to null since we split
+                        normalized['COLOR'] = null;
+                    } else {
+                        // This is a normal color like D, E, F → keep as is
+                        normalized['COLOR'] = cleanedValue;
+                        normalized['FANCY_COLOR'] = null;
+                        normalized['FANCY_COLOR_INTENSITY'] = null;
+                    }
+
+                    return;
+                }
+
+
                 // Handle AVAILABILITY -> STATUS
                 if (dbKey === 'AVAILABILITY') {
                     const availability = (cleanedValue || '').toString().trim().toUpperCase();
                     if (availability === 'YES' || availability === 'G') {
                         normalized['STATUS'] = 'AVAILABLE';
-                    } else if (availability === 'SOLD') {
+                    } else if (availability === 'SOLD' || availability === 'SELL') {
                         normalized['STATUS'] = 'SOLD';
                     } else if (availability === 'HOLD') {
                         normalized['STATUS'] = 'HOLD';
@@ -397,12 +437,18 @@ const StockData = () => {
                     return; // Skip adding now
                 }
 
-                normalized[dbKey] = cleanedValue;
+                // normalized[dbKey] = cleanedValue;
+                // ✅ Default assignment
+                // Skip if this dbKey is a special field to prevent overwrite
+                if (!['FANCY_COLOR', 'FANCY_COLOR_INTENSITY', 'LENGTH', 'WIDTH', 'HEIGHT', 'STATUS', 'CITY'].includes(dbKey)) {
+                    normalized[dbKey] = cleanedValue;
+                }
             });
 
             // Resolve CITY vs LOCATION
             normalized['CITY'] = tempCity || tempLocation || '';
 
+            console.log("Finalllllll normalized = ", normalized);
             return normalized;
         });
     }
@@ -434,14 +480,14 @@ const StockData = () => {
         }
         if (dataToUpload.length === 0) return; // Nothing to upload
 
-
+        console.log("Data send to Backend = ", dataToUpload);
 
         const sendToDB = {
             // data: normalizeObjectKeys(excelData),
             data: dataToUpload,
             category: formData.category
         };
-        console.log("Send to DB = ", sendToDB);
+        // console.log("Send to DB = ", sendToDB);
         setLoading(true); // Start loading
         try {
             const res = await API.post('/upload-excel', sendToDB, { withCredentials: true });
