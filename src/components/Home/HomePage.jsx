@@ -56,7 +56,7 @@ const HomePage = () => {
                     Diamond Inventory Portal
                 </Typography>
                 <Typography variant="h6" color="inherit" sx={{ mb: 3 }}>
-                    Seamlessly manage, analyze and share your diamond stock.
+                    Seamlessly manage, analyze and share your diamond stock via API.
                 </Typography>
                 <Stack direction="row" justifyContent="center" spacing={2} sx={{ flexWrap: 'wrap', mt: 2 }}>
                     <Button
