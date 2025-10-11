@@ -116,58 +116,70 @@ const StockData = () => {
 
         let s = String(measurementStr).trim();
 
-        // 🔹 Normalize separators and remove hidden minus signs
-        s = s
-            .replace(/×|✕|x/g, '*')     // unicode multiply → *
-            .replace(/[–—−]/g, '-')   // en-dash / em-dash / minus → hyphen
-            .replace(/,/g, '.')       // decimal comma → dot
-            .replace(/\s+/g, '')      // remove spaces
-            .replace(/([0-9])-/g, '$1-'); // ensure "-" is only treated as separator
+        // 🔹 Remove everything that looks like a unit (mm, cm, m, inch, etc.)
+        s = s.replace(/\b(mm|cm|m|in|inch|inches)\b/gi, '');
 
-        // 🔹 Split explicitly on * or -
-        const parts = s.split(/[*-]/).filter(Boolean).map(n => parseFloat(n));
+        // 🔹 Normalize all possible separators to a single character (*)
+        s = s
+            .replace(/×|✕|x|X|-/g, '*')  // all separator variants → *
+            .replace(/,/g, '.')          // decimal comma → dot
+            .replace(/\s+/g, '');        // remove spaces
+
+        // 🔹 Split on * and parse numbers
+        const parts = s.split('*').filter(Boolean).map(n => parseFloat(n));
 
         let length = null, width = null, height = null;
 
-        if (parts.length >= 3) {
+        if (parts.length === 3) {
             [length, width, height] = parts;
         } else if (parts.length === 2) {
-            if (s.includes('*')) {
-                length = parts[0];
-                width = parts[0];
-                height = parts[1];
-            } else {
-                [length, width] = parts;
-            }
+            [length, width] = parts;
         } else if (parts.length === 1) {
-            length = parts[0];
-            width = parts[0];
+            length = width = parts[0];
         }
 
         return { LENGTH: length, WIDTH: width, HEIGHT: height };
     }
 
-
     // function parseMeasurements(measurementStr) {
-    //     let length = null, width = null, height = null;
-
-    //     if (measurementStr.includes("*")) {
-    //         // Example: "5.29-5.34*3.33"
-    //         const [lw, h] = measurementStr.split("*");
-
-    //         height = parseFloat(h);
-
-    //         if (lw.includes("-")) {
-    //             const [l, w] = lw.split("-");
-    //             length = parseFloat(l);
-    //             width = parseFloat(w);
-    //         } else {
-    //             // Case: "5.29*3.33" (no dash, only length & height)
-    //             length = parseFloat(lw);
-    //             width = parseFloat(lw);
-    //         }
+    //     if (!measurementStr && measurementStr !== 0) {
+    //         return { LENGTH: null, WIDTH: null, HEIGHT: null };
     //     }
 
+    //     let s = String(measurementStr).trim();
+
+    //     // 🔹 Remove common unit suffixes (mm, cm, m, in, inches, etc.)
+    //     s = s.replace(/\b(mm|MM|cm|m|in|inch|inches)\b/gi, '');
+
+    //     // 🔹 Normalize separators and remove hidden minus signs
+    //     s = s
+    //         .replace(/×|✕|x/g, '*')     // unicode multiply → *
+    //         .replace(/[–—−]/g, '-')   // en-dash / em-dash / minus → hyphen
+    //         .replace(/,/g, '.')       // decimal comma → dot
+    //         .replace(/\s+/g, '')      // remove spaces
+    //         .replace(/([0-9])-/g, '$1-'); // ensure "-" is only treated as separator
+
+    //     // 🔹 Split explicitly on * or -
+    //     const parts = s.split(/[*-]/).filter(Boolean).map(n => parseFloat(n));
+
+    //     let length = null, width = null, height = null;
+
+    //     if (parts.length >= 3) {
+    //         [length, width, height] = parts;
+    //     } else if (parts.length === 2) {
+    //         if (s.includes('*')) {
+    //             length = parts[0];
+    //             width = parts[0];
+    //             height = parts[1];
+    //         } else {
+    //             [length, width] = parts;
+    //         }
+    //     } else if (parts.length === 1) {
+    //         length = parts[0];
+    //         width = parts[0];
+    //     }
+
+    //     console.log("Length : ", length, "Width : ", width, "Height : ", height);
     //     return { LENGTH: length, WIDTH: width, HEIGHT: height };
     // }
 
