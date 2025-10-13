@@ -212,6 +212,7 @@ const StockData = () => {
 
     const headerMapping = {
         'STOCK_': 'STOCKID',
+        'STOCK_ID': 'STOCKID',
         'STOCK': 'STOCKID',
         'CUSTOMER_REF_NO': 'STOCKID',
         'REPORT_': 'CERTIFICATE_NUMBER',
@@ -394,7 +395,6 @@ const StockData = () => {
 
                 if (dbKey === 'COLOR') {
                     const { fancy_color, fancy_color_intensity } = parseColor(cleanedValue);
-                    console.log("Uploading = ", fancy_color, " & ", fancy_color_intensity);
 
                     if (fancy_color) {
                         // This is a fancy color → split
@@ -447,8 +447,6 @@ const StockData = () => {
 
             // Resolve CITY vs LOCATION
             normalized['CITY'] = tempCity || tempLocation || '';
-
-            console.log("Finalllllll normalized = ", normalized);
             return normalized;
         });
     }
@@ -470,9 +468,11 @@ const StockData = () => {
             if (!stockId) {
                 if (dataToUpload.length === 0) {
                     // showMessage(`Upload stopped: Row ${i + 1} has empty STOCKID. Nothing uploaded.`, "error");
+                    // showMessage(`Something Went Wrong !`, "error");
                     return;
                 } else {
                     // showMessage(`Upload stopped at row ${i + 1} due to empty STOCKID. Uploaded previous ${dataToUpload.length} row(s).`, "warning");
+                    // showMessage(`Something Went Wrong !`, "error");
                     break; // Stop at first empty STOCKID
                 }
             }
@@ -487,7 +487,6 @@ const StockData = () => {
             data: dataToUpload,
             category: formData.category
         };
-        // console.log("Send to DB = ", sendToDB);
         setLoading(true); // Start loading
         try {
             const res = await API.post('/upload-excel', sendToDB, { withCredentials: true });
