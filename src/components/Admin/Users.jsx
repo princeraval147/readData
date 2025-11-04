@@ -5,16 +5,15 @@ const Users = () => {
     const [users, setUsers] = useState([]);
 
     // Fetch pending users
+    const fetchUsers = async () => {
+        try {
+            const res = await API.get("/admin/all-users", { withCredentials: true });
+            setUsers(res.data);
+        } catch (err) {
+            console.error("Error fetching users", err);
+        }
+    };
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const res = await API.get("/admin/pending-users", { withCredentials: true });
-                setUsers(res.data);
-            } catch (err) {
-                console.error("Error fetching users", err);
-            }
-        };
-
         fetchUsers();
     }, []);
 
@@ -26,15 +25,30 @@ const Users = () => {
                 { id },
                 { withCredentials: true }
             );
-            setUsers(users.filter((u) => u.ID !== id)); // remove from list after action
             alert("user Approved");
+            fetchUsers();
+        } catch (err) {
+            console.error("Action failed", err);
+        }
+    };
+
+    const DeactivateUser = async (id) => {
+        console.log("Id", id);
+        try {
+            await API.post(
+                `/admin/deactivate-user`,
+                { id },
+                { withCredentials: true }
+            );
+            alert("user Deactivated");
+            fetchUsers();
         } catch (err) {
             console.error("Action failed", err);
         }
     };
 
 
-
+    console.log("User Data = ", users)
 
 
     return (
@@ -51,6 +65,7 @@ const Users = () => {
                             <th className="p-4">Registered</th>
                             <th className="p-4">Last Login At</th>
                             <th className="p-4">Actions</th>
+                            <th className="p-4">Deactivate User</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,15 +77,24 @@ const Users = () => {
                                 <td className="p-4">{new Date(user.REGISTER_AT).toLocaleDateString()}</td>
                                 <td className="p-4">{new Date(user.LAST_LOGIN).toLocaleDateString()}</td>
                                 {
-                                    !user.ISAPPROVED &&
-                                    <td className="p-4 space-x-2">
-                                        <button
-                                            onClick={() => handleAction(user.ID, true)}
-                                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                        >
-                                            Approve
-                                        </button>
-                                    </td>
+                                    !user.ISAPPROVED ?
+                                        <td className="p-4 space-x-2">
+                                            <button
+                                                onClick={() => handleAction(user.ID, true)}
+                                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                            >
+                                                Approve
+                                            </button>
+                                        </td>
+                                        :
+                                        <td className="p-4 space-x-2">
+                                            <button
+                                                onClick={() => DeactivateUser(user.ID, false)}
+                                                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
+                                            >
+                                                Deactivate
+                                            </button>
+                                        </td>
                                 }
                             </tr>
                         ))}
