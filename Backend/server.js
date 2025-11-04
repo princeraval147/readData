@@ -5,6 +5,7 @@ const cors = require('cors');
 const db = require('./config/db');
 const cookieParser = require('cookie-parser');
 const allRoutes = require('./routes/AllRoutes');
+const adminRoutes = require('./routes/AdminRoutes');
 
 const app = express();
 const HOST = process.env.HOST || "localhost";
@@ -43,7 +44,10 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(express.json());
 
 app.use(cookieParser());
-app.use(allRoutes);
+
+
+app.use('/api', allRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
     console.error('got error:', err);
