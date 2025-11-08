@@ -73,6 +73,7 @@ const StockData = () => {
 
     const [stocks, setStocks] = useState([]);
     const [error, setError] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const navigate = useNavigate();
 
@@ -856,8 +857,7 @@ const StockData = () => {
                 }
             } catch (deleteError) {
                 console.error("All DELETE failed:", deleteError);
-                // alert("Failed to delete All stock: ");
-                showMessage("Failed to delete All stock: ", "error");
+                showMessage("Something Went Wrong ! Please Try Again Later");
             }
         }
     }
@@ -869,6 +869,36 @@ const StockData = () => {
 
     return (
         <>
+            {/* Confirm Delete Box */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+                    <div className="bg-white rounded-xl shadow-lg p-6 w-80 text-center">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-800">
+                            Confirm Deletion
+                        </h2>
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to delete this record? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={() => {
+                                    deleteStock();
+                                    setShowDeleteModal(false);
+                                }}
+                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded cursor-pointer"
+                            >
+                                Yes, Delete
+                            </button>
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <Box>
                 <Box mb={1}>
                     <Stack
@@ -950,7 +980,8 @@ const StockData = () => {
                             variant="contained"
                             color="error"
                             startIcon={<DeleteForeverIcon />}
-                            onClick={deleteStock}
+                            // onClick={deleteStock}
+                            onClick={() => setShowDeleteModal(true)}
                             disabled={stocks.length === 0}
                         >
                             Delete All Stock
